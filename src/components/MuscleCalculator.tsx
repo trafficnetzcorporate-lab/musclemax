@@ -67,14 +67,31 @@ const MuscleCalculator = () => {
     // Potential gain
     const potentialGain = Math.max(0, maxLeanBodyMass - currentLeanBodyMass);
 
-    // Influencer suggestions based on training goal
-    const influencers = {
-      lean: ['Jeff Cavaliere (AthleanX)', 'Greg Doucette', 'Will Tennyson'],
-      mass: ['Larry Wheels', 'Bradley Martyn', 'David Laid']
-    };
+    // Dynamic influencer suggestions based on remaining potential and training goal
+    let influencerSuggestion: string;
     
-    const goalInfluencers = influencers[formData.trainingGoal as keyof typeof influencers];
-    const influencerSuggestion = goalInfluencers[Math.floor(Math.random() * goalInfluencers.length)];
+    if (potentialGain < 5) {
+      // Close to genetic potential
+      if (formData.trainingGoal === 'lean') {
+        influencerSuggestion = 'Jeff Cavaliere (AthleanX) - Focus on strength and definition';
+      } else {
+        influencerSuggestion = 'David Laid - Maintain aesthetic physique with advanced techniques';
+      }
+    } else if (potentialGain < 15) {
+      // Moderate potential remaining
+      if (formData.trainingGoal === 'lean') {
+        influencerSuggestion = 'Greg Doucette - Efficient training for lean gains';
+      } else {
+        influencerSuggestion = 'Bradley Martyn - Balanced hypertrophy approach';
+      }
+    } else {
+      // High potential remaining
+      if (formData.trainingGoal === 'lean') {
+        influencerSuggestion = 'Will Tennyson - Beginner-friendly strength progression';
+      } else {
+        influencerSuggestion = 'Larry Wheels - High-volume mass building protocols';
+      }
+    }
 
     setResults({
       currentLeanBodyMass: Math.round(currentLeanBodyMass * 10) / 10,
@@ -279,7 +296,7 @@ const MuscleCalculator = () => {
                     <div className="bg-gradient-primary/10 p-4 rounded-lg border border-primary/20">
                       <div className="flex items-center gap-2 mb-1">
                         <TrendingUp className="w-4 h-4 text-primary" />
-                        <div className="text-sm text-primary">Potential Muscle Gain</div>
+                        <div className="text-sm text-primary">Remaining Muscle Gain Potential</div>
                       </div>
                       <div className="text-3xl font-bold text-primary">
                         +{results.potentialGain} lbs
