@@ -28,6 +28,110 @@ interface FormData {
   trainingGoal: string;
 }
 
+// Modern Influencer Catalog (units: inches, pounds)
+// Weights are approximate visual targets at the listed body-fat levels.
+const INFLUENCERS = [
+  // --- Hypertrophy / Mass ---
+  {
+    name: "Simeon Panda",
+    category: "hypertrophy_mass",
+    heightIn: 73,                 // 6'1"
+    weights: { 8: 225, 10: 220, 12: 215 },
+    image: "",                    // add CDN/hosted image later
+    ig: "simeonpanda"
+  },
+  {
+    name: "Chris Bumstead",
+    category: "hypertrophy_mass",
+    heightIn: 73,                 // 6'1"
+    weights: { 8: 235, 10: 228, 12: 222 },
+    image: "",
+    ig: "cbum"
+  },
+  {
+    name: "Bradley Martyn",
+    category: "hypertrophy_mass",
+    heightIn: 75,                 // 6'3"
+    weights: { 8: 255, 10: 248, 12: 242 },
+    image: "",
+    ig: "bradleymartyn"
+  },
+  {
+    name: "Ulisses Jr.",
+    category: "hypertrophy_mass",
+    heightIn: 70,                 // 5'10"
+    weights: { 8: 210, 10: 205, 12: 200 },
+    image: "",
+    ig: "ulissesworld"
+  },
+  {
+    name: "Andrei Deiu",
+    category: "hypertrophy_mass",
+    heightIn: 70,                 // 5'10"
+    weights: { 8: 200, 10: 195, 12: 190 },
+    image: "",
+    ig: "andreideiu_"
+  },
+  {
+    name: "Noel Deyzel",
+    category: "hypertrophy_mass",
+    heightIn: 77,                 // 6'5"
+    weights: { 8: 270, 10: 262, 12: 255 },
+    image: "",
+    ig: "noeldeyzel_bodybuilder"
+  },
+
+  // --- Strength / Lean ---
+  {
+    name: "David Laid",
+    category: "strength_lean",
+    heightIn: 74,                 // 6'2"
+    weights: { 8: 200, 10: 195, 12: 190 },
+    image: "",
+    ig: "davidlaid"
+  },
+  {
+    name: "Jeff Seid",
+    category: "strength_lean",
+    heightIn: 72,                 // 6'0"
+    weights: { 8: 205, 10: 200, 12: 195 },
+    image: "",
+    ig: "jeff_seid"
+  },
+  {
+    name: "Chris Heria",
+    category: "strength_lean",
+    heightIn: 70,                 // 5'10"
+    weights: { 8: 178, 10: 175, 12: 172 },
+    image: "",
+    ig: "chrisheria"
+  },
+  {
+    name: "MattDoesFitness (Matt Morsia)",
+    category: "strength_lean",
+    heightIn: 73,                 // 6'1"
+    weights: { 8: 205, 10: 200, 12: 195 },
+    image: "",
+    ig: "mattdoesfitness"
+  },
+  {
+    name: "Jesse James West",
+    category: "strength_lean",
+    heightIn: 70,                 // 5'10"
+    weights: { 8: 182, 10: 179, 12: 176 },
+    image: "",
+    ig: "jessejameswest"
+  },
+  {
+    name: "Alex Eubank",
+    category: "strength_lean",
+    heightIn: 71,                 // 5'11"
+    weights: { 8: 190, 10: 187, 12: 184 },
+    image: "",
+    ig: "alex_eubank15"
+  }
+];
+
 const MuscleCalculator = () => {
   const [formData, setFormData] = useState<FormData>({
     bodyFat: '',
@@ -81,27 +185,38 @@ const MuscleCalculator = () => {
     // Bodyweight at maximum potential
     const bodyweightAtMax = maxLeanBodyMass / (1 - targetBodyFat / 100);
 
-    // Dynamic influencer suggestions based on remaining potential and training goal
-    const pctToGo = potentialGain / Math.max(1, maxLeanBodyMass);
-    let influencerSuggestion: string;
+    // Find best matching influencer from database
+    const targetCategory = formData.trainingGoal === 'lean' ? 'strength_lean' : 'hypertrophy_mass';
+    const candidateInfluencers = INFLUENCERS.filter(inf => inf.category === targetCategory);
     
-    if (formData.trainingGoal === 'lean') {
-      if (pctToGo > 0.25) {
-        influencerSuggestion = 'Jeff Nippard - Strength + lean physique focus';
-      } else if (pctToGo > 0.15) {
-        influencerSuggestion = 'Greg Doucette - Efficient training for lean gains';
-      } else {
-        influencerSuggestion = 'Alain Gonzalez - Lean, aesthetic emphasis';
-      }
-    } else {
-      if (pctToGo > 0.30) {
-        influencerSuggestion = 'Jeff Seid - High hypertrophy emphasis';
-      } else if (pctToGo > 0.15) {
-        influencerSuggestion = 'David Laid - Aesthetic mass with leanness';
-      } else {
-        influencerSuggestion = 'Steve Reeves (classic line) - Classic proportions at/near potential';
+    // Find closest height match
+    let bestMatch = candidateInfluencers[0];
+    let bestScore = Infinity;
+    
+    for (const influencer of candidateInfluencers) {
+      const heightDiff = Math.abs(influencer.heightIn - heightInches);
+      
+      // Get influencer's weight at user's target BF% (interpolate if needed)
+      const targetBfInt = Math.round(targetBodyFat);
+      const influencerWeight = influencer.weights[targetBfInt as keyof typeof influencer.weights] || 
+                              influencer.weights[10]; // fallback to 10% BF
+      
+      const weightDiff = Math.abs(influencerWeight - bodyweightAtMax);
+      
+      // Combined score: prioritize height similarity, then weight
+      const score = heightDiff * 2 + weightDiff * 0.02;
+      
+      if (score < bestScore) {
+        bestScore = score;
+        bestMatch = influencer;
       }
     }
+    
+    const targetBfInt = Math.round(targetBodyFat);
+    const matchWeight = bestMatch.weights[targetBfInt as keyof typeof bestMatch.weights] || 
+                       bestMatch.weights[10];
+    
+    const influencerSuggestion = `${bestMatch.name} (@${bestMatch.ig}) - Similar build: ${Math.floor(bestMatch.heightIn / 12)}'${bestMatch.heightIn % 12}" at ~${matchWeight}lbs (${targetBodyFat}% BF)`;
 
     setResults({
       currentLeanBodyMass: Math.round(currentLeanBodyMass * 10) / 10,
