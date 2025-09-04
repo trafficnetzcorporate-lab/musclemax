@@ -11,6 +11,7 @@ interface CalculationResults {
   currentLeanBodyMass: number;
   maxGeneticLeanBodyMass: number;
   potentialGain: number;
+  bodyweightAtMax: number;
   influencerSuggestion: string;
 }
 
@@ -76,6 +77,9 @@ const MuscleCalculator = () => {
     
     // Potential gain
     const potentialGain = Math.max(0, maxLeanBodyMass - currentLeanBodyMass);
+    
+    // Bodyweight at maximum potential
+    const bodyweightAtMax = maxLeanBodyMass / (1 - targetBodyFat / 100);
 
     // Dynamic influencer suggestions based on remaining potential and training goal
     const pctToGo = potentialGain / Math.max(1, maxLeanBodyMass);
@@ -103,6 +107,7 @@ const MuscleCalculator = () => {
       currentLeanBodyMass: Math.round(currentLeanBodyMass * 10) / 10,
       maxGeneticLeanBodyMass: Math.round(maxLeanBodyMass * 10) / 10,
       potentialGain: Math.round(potentialGain * 10) / 10,
+      bodyweightAtMax: Math.round(bodyweightAtMax * 10) / 10,
       influencerSuggestion
     });
   };
@@ -320,6 +325,15 @@ const MuscleCalculator = () => {
                       </div>
                       <div className="text-3xl font-bold text-primary">
                         +{results.potentialGain} lbs
+                      </div>
+                    </div>
+
+                    <div className="bg-secondary/50 p-4 rounded-lg border border-border">
+                      <div className="text-sm text-muted-foreground mb-1">
+                        Bodyweight at Max (at {formData.targetBodyFat}% BF)
+                      </div>
+                      <div className="text-3xl font-bold text-foreground">
+                        {results.bodyweightAtMax} lbs
                       </div>
                     </div>
                   </div>
