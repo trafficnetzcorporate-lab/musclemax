@@ -16,6 +16,7 @@ interface CalculationResults {
 
 interface FormData {
   bodyFat: string;
+  targetBodyFat: string;
   wrist: string;
   ankle: string;
   weight: string;
@@ -29,6 +30,7 @@ interface FormData {
 const MuscleCalculator = () => {
   const [formData, setFormData] = useState<FormData>({
     bodyFat: '',
+    targetBodyFat: '10',
     wrist: '',
     ankle: '',
     weight: '',
@@ -45,8 +47,16 @@ const MuscleCalculator = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  // Casey Butt's accurate formula
+  const caseyButtMaxLBM = (heightIn: number, wristIn: number, ankleIn: number, targetBfPercent: number) => {
+    const termBones = Math.sqrt(wristIn) / 22.6670 + Math.sqrt(ankleIn) / 17.0104;
+    const bfFactor = targetBfPercent / 224 + 1;
+    return Math.pow(heightIn, 1.5) * termBones * bfFactor;
+  };
+
   const calculateResults = () => {
     const bodyFat = parseFloat(formData.bodyFat);
+    const targetBodyFat = parseFloat(formData.targetBodyFat);
     const wrist = parseFloat(formData.wrist);
     const ankle = parseFloat(formData.ankle);
     const weight = parseFloat(formData.weight);
@@ -58,38 +68,34 @@ const MuscleCalculator = () => {
       heightInches = parseFloat(formData.heightCm) / 2.54;
     }
 
-    // Casey Butt's formula for maximum lean body mass
-    const maxLeanBodyMass = (heightInches - 98) + (wrist + ankle) * 2.2;
-    
     // Current lean body mass
     const currentLeanBodyMass = weight * (1 - bodyFat / 100);
+    
+    // Maximum lean body mass using correct Casey Butt formula
+    const maxLeanBodyMass = caseyButtMaxLBM(heightInches, wrist, ankle, targetBodyFat);
     
     // Potential gain
     const potentialGain = Math.max(0, maxLeanBodyMass - currentLeanBodyMass);
 
     // Dynamic influencer suggestions based on remaining potential and training goal
+    const pctToGo = potentialGain / Math.max(1, maxLeanBodyMass);
     let influencerSuggestion: string;
     
-    if (potentialGain < 5) {
-      // Close to genetic potential
-      if (formData.trainingGoal === 'lean') {
-        influencerSuggestion = 'Jeff Cavaliere (AthleanX) - Focus on strength and definition';
-      } else {
-        influencerSuggestion = 'David Laid - Maintain aesthetic physique with advanced techniques';
-      }
-    } else if (potentialGain < 15) {
-      // Moderate potential remaining
-      if (formData.trainingGoal === 'lean') {
+    if (formData.trainingGoal === 'lean') {
+      if (pctToGo > 0.25) {
+        influencerSuggestion = 'Jeff Nippard - Strength + lean physique focus';
+      } else if (pctToGo > 0.15) {
         influencerSuggestion = 'Greg Doucette - Efficient training for lean gains';
       } else {
-        influencerSuggestion = 'Bradley Martyn - Balanced hypertrophy approach';
+        influencerSuggestion = 'Alain Gonzalez - Lean, aesthetic emphasis';
       }
     } else {
-      // High potential remaining
-      if (formData.trainingGoal === 'lean') {
-        influencerSuggestion = 'Will Tennyson - Beginner-friendly strength progression';
+      if (pctToGo > 0.30) {
+        influencerSuggestion = 'Jeff Seid - High hypertrophy emphasis';
+      } else if (pctToGo > 0.15) {
+        influencerSuggestion = 'David Laid - Aesthetic mass with leanness';
       } else {
-        influencerSuggestion = 'Larry Wheels - High-volume mass building protocols';
+        influencerSuggestion = 'Steve Reeves (classic line) - Classic proportions at/near potential';
       }
     }
 
@@ -103,10 +109,10 @@ const MuscleCalculator = () => {
 
   const isFormValid = () => {
     if (formData.heightUnit === 'imperial') {
-      return formData.bodyFat && formData.wrist && formData.ankle && formData.weight && 
+      return formData.bodyFat && formData.targetBodyFat && formData.wrist && formData.ankle && formData.weight && 
              formData.heightFt && formData.heightIn;
     } else {
-      return formData.bodyFat && formData.wrist && formData.ankle && formData.weight && 
+      return formData.bodyFat && formData.targetBodyFat && formData.wrist && formData.ankle && formData.weight && 
              formData.heightCm;
     }
   };
@@ -149,7 +155,7 @@ const MuscleCalculator = () => {
             <CardContent className="space-y-6">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="bodyFat">Body Fat %</Label>
+                  <Label htmlFor="bodyFat">Current Body Fat %</Label>
                   <Input
                     id="bodyFat"
                     type="number"
@@ -159,6 +165,20 @@ const MuscleCalculator = () => {
                     className="bg-secondary border-border"
                   />
                 </div>
+                <div>
+                  <Label htmlFor="targetBodyFat">Target Body Fat %</Label>
+                  <Input
+                    id="targetBodyFat"
+                    type="number"
+                    placeholder="10"
+                    value={formData.targetBodyFat}
+                    onChange={(e) => handleInputChange('targetBodyFat', e.target.value)}
+                    className="bg-secondary border-border"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4">
                 <div>
                   <Label htmlFor="weight">Weight (lbs)</Label>
                   <Input
