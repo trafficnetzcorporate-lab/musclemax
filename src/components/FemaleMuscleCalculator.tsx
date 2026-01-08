@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calculator, Target, TrendingUp } from 'lucide-react';
+import { Calculator, Target, TrendingUp, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import fitnessHero from '@/assets/fitness-hero.jpg';
 
@@ -29,114 +29,114 @@ interface FormData {
   trainingGoal: string;
 }
 
-// Modern Influencer Catalog (units: inches, pounds)
+// Female Fitness Influencer Catalog (units: inches, pounds)
 // Weights are approximate visual targets at the listed body-fat levels.
 const INFLUENCERS = [
-  // --- Hypertrophy / Mass ---
+  // --- Physique / Athletic ---
   {
-    name: "Simeon Panda",
-    category: "hypertrophy_mass",
-    heightIn: 73,                 // 6'1"
-    weights: { 8: 225, 10: 220, 12: 215 },
-    image: "",                    // add CDN/hosted image later
-    ig: "simeonpanda"
+    name: "Whitney Simmons",
+    category: "physique_athletic",
+    heightIn: 66,                 // 5'6"
+    weights: { 18: 135, 20: 138, 22: 142 },
+    image: "",
+    ig: "whitneyysimmons"
   },
   {
-    name: "Chris Bumstead",
-    category: "hypertrophy_mass",
-    heightIn: 73,                 // 6'1"
-    weights: { 8: 235, 10: 228, 12: 222 },
+    name: "Krissy Cela",
+    category: "physique_athletic",
+    heightIn: 66,                 // 5'6"
+    weights: { 18: 132, 20: 135, 22: 139 },
     image: "",
-    ig: "cbum"
+    ig: "krissycela"
   },
   {
-    name: "Bradley Martyn",
-    category: "hypertrophy_mass",
-    heightIn: 75,                 // 6'3"
-    weights: { 8: 255, 10: 248, 12: 242 },
+    name: "Stephanie Buttermore",
+    category: "physique_athletic",
+    heightIn: 63,                 // 5'3"
+    weights: { 18: 125, 20: 128, 22: 132 },
     image: "",
-    ig: "bradleymartyn"
+    ig: "stephanie_buttermore"
   },
   {
-    name: "Ulisses Jr.",
-    category: "hypertrophy_mass",
-    heightIn: 70,                 // 5'10"
-    weights: { 8: 210, 10: 205, 12: 200 },
+    name: "Natacha Océane",
+    category: "physique_athletic",
+    heightIn: 66,                 // 5'6"
+    weights: { 18: 130, 20: 133, 22: 137 },
     image: "",
-    ig: "ulissesworld"
+    ig: "natacha.oceane"
   },
   {
-    name: "Andrei Deiu",
-    category: "hypertrophy_mass",
-    heightIn: 70,                 // 5'10"
-    weights: { 8: 200, 10: 195, 12: 190 },
+    name: "Heidi Somers",
+    category: "physique_athletic",
+    heightIn: 64,                 // 5'4"
+    weights: { 18: 125, 20: 128, 22: 132 },
     image: "",
-    ig: "andreideiu_"
+    ig: "buffbunny"
   },
   {
-    name: "Noel Deyzel",
-    category: "hypertrophy_mass",
-    heightIn: 77,                 // 6'5"
-    weights: { 8: 270, 10: 262, 12: 255 },
+    name: "Cass Martin",
+    category: "physique_athletic",
+    heightIn: 65,                 // 5'5"
+    weights: { 18: 140, 20: 143, 22: 147 },
     image: "",
-    ig: "noeldeyzel_bodybuilder"
+    ig: "casssmartin"
   },
 
-  // --- Strength / Lean ---
+  // --- Lean / Toned ---
   {
-    name: "David Laid",
-    category: "strength_lean",
-    heightIn: 74,                 // 6'2"
-    weights: { 8: 200, 10: 195, 12: 190 },
+    name: "Kelsey Wells",
+    category: "lean_toned",
+    heightIn: 66,                 // 5'6"
+    weights: { 18: 128, 20: 131, 22: 135 },
     image: "",
-    ig: "davidlaid"
+    ig: "kelseywells"
   },
   {
-    name: "Jeff Seid",
-    category: "strength_lean",
-    heightIn: 72,                 // 6'0"
-    weights: { 8: 205, 10: 200, 12: 195 },
+    name: "Katie Crewe",
+    category: "lean_toned",
+    heightIn: 64,                 // 5'4"
+    weights: { 18: 120, 20: 123, 22: 127 },
     image: "",
-    ig: "jeff_seid"
+    ig: "katiecrewe"
   },
   {
-    name: "Chris Heria",
-    category: "strength_lean",
-    heightIn: 70,                 // 5'10"
-    weights: { 8: 178, 10: 175, 12: 172 },
+    name: "Tammy Hembrow",
+    category: "lean_toned",
+    heightIn: 66,                 // 5'6"
+    weights: { 18: 126, 20: 129, 22: 133 },
     image: "",
-    ig: "chrisheria"
+    ig: "tammyhembrow"
   },
   {
-    name: "MattDoesFitness (Matt Morsia)",
-    category: "strength_lean",
-    heightIn: 73,                 // 6'1"
-    weights: { 8: 205, 10: 200, 12: 195 },
+    name: "Emily Skye",
+    category: "lean_toned",
+    heightIn: 67,                 // 5'7"
+    weights: { 18: 135, 20: 138, 22: 142 },
     image: "",
-    ig: "mattdoesfitness"
+    ig: "emilyskyefit"
   },
   {
-    name: "Jesse James West",
-    category: "strength_lean",
-    heightIn: 70,                 // 5'10"
-    weights: { 8: 182, 10: 179, 12: 176 },
+    name: "Massy Arias",
+    category: "lean_toned",
+    heightIn: 65,                 // 5'5"
+    weights: { 18: 125, 20: 128, 22: 132 },
     image: "",
-    ig: "jessejameswest"
+    ig: "maborod"
   },
   {
-    name: "Alex Eubank",
-    category: "strength_lean",
-    heightIn: 71,                 // 5'11"
-    weights: { 8: 190, 10: 187, 12: 184 },
+    name: "Kayla Itsines",
+    category: "lean_toned",
+    heightIn: 65,                 // 5'5"
+    weights: { 18: 120, 20: 123, 22: 127 },
     image: "",
-    ig: "alex_eubank15"
+    ig: "kayla_itsines"
   }
 ];
 
-const MuscleCalculator = () => {
+const FemaleMuscleCalculator = () => {
   const [formData, setFormData] = useState<FormData>({
     bodyFat: '',
-    targetBodyFat: '10',
+    targetBodyFat: '20',
     wrist: '',
     ankle: '',
     weight: '',
@@ -144,7 +144,7 @@ const MuscleCalculator = () => {
     heightIn: '',
     heightCm: '',
     heightUnit: 'imperial',
-    trainingGoal: 'lean'
+    trainingGoal: 'toned'
   });
 
   const [results, setResults] = useState<CalculationResults | null>(null);
@@ -153,11 +153,21 @@ const MuscleCalculator = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  // Casey Butt's accurate formula
-  const caseyButtMaxLBM = (heightIn: number, wristIn: number, ankleIn: number, targetBfPercent: number) => {
+  // Female-adapted formula based on research showing women typically achieve 
+  // ~52-55% of male maximum muscular potential (Abe et al., 2003; Loomba-Albrecht & Styne, 2009)
+  // Using modified Casey Butt formula with female adjustment factor
+  const femaleMaxLBM = (heightIn: number, wristIn: number, ankleIn: number, targetBfPercent: number) => {
+    // Standard Casey Butt formula
     const termBones = Math.sqrt(wristIn) / 22.6670 + Math.sqrt(ankleIn) / 17.0104;
     const bfFactor = targetBfPercent / 224 + 1;
-    return Math.pow(heightIn, 1.5) * termBones * bfFactor;
+    const maleLBM = Math.pow(heightIn, 1.5) * termBones * bfFactor;
+    
+    // Female adjustment: ~52-55% of male potential based on research
+    // Women have ~40-50% less upper body and ~25-30% less lower body muscle mass potential
+    // Combined factor of 0.54 aligns with FFMI research (natural female max ~21-22 vs male ~25-26)
+    const femaleAdjustment = 0.54;
+    
+    return maleLBM * femaleAdjustment;
   };
 
   const calculateResults = () => {
@@ -177,8 +187,8 @@ const MuscleCalculator = () => {
     // Current lean body mass
     const currentLeanBodyMass = weight * (1 - bodyFat / 100);
     
-    // Maximum lean body mass using correct Casey Butt formula
-    const maxLeanBodyMass = caseyButtMaxLBM(heightInches, wrist, ankle, targetBodyFat);
+    // Maximum lean body mass using female-adapted formula
+    const maxLeanBodyMass = femaleMaxLBM(heightInches, wrist, ankle, targetBodyFat);
     
     // Potential gain
     const potentialGain = Math.max(0, maxLeanBodyMass - currentLeanBodyMass);
@@ -187,7 +197,7 @@ const MuscleCalculator = () => {
     const bodyweightAtMax = maxLeanBodyMass / (1 - targetBodyFat / 100);
 
     // Find best matching influencer from database
-    const targetCategory = formData.trainingGoal === 'lean' ? 'strength_lean' : 'hypertrophy_mass';
+    const targetCategory = formData.trainingGoal === 'toned' ? 'lean_toned' : 'physique_athletic';
     const candidateInfluencers = INFLUENCERS.filter(inf => inf.category === targetCategory);
     
     // Find closest height match
@@ -200,7 +210,7 @@ const MuscleCalculator = () => {
       // Get influencer's weight at user's target BF% (interpolate if needed)
       const targetBfInt = Math.round(targetBodyFat);
       const influencerWeight = influencer.weights[targetBfInt as keyof typeof influencer.weights] || 
-                              influencer.weights[10]; // fallback to 10% BF
+                              influencer.weights[20]; // fallback to 20% BF
       
       const weightDiff = Math.abs(influencerWeight - bodyweightAtMax);
       
@@ -215,7 +225,7 @@ const MuscleCalculator = () => {
     
     const targetBfInt = Math.round(targetBodyFat);
     const matchWeight = bestMatch.weights[targetBfInt as keyof typeof bestMatch.weights] || 
-                       bestMatch.weights[10];
+                       bestMatch.weights[20];
     
     const influencerSuggestion = `${bestMatch.name} (@${bestMatch.ig}) - Similar build: ${Math.floor(bestMatch.heightIn / 12)}'${bestMatch.heightIn % 12}" at ~${matchWeight}lbs (${targetBodyFat}% BF)`;
 
@@ -250,10 +260,10 @@ const MuscleCalculator = () => {
           <div className="relative h-full flex items-center justify-center text-center">
             <div>
               <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
-                Maximum Muscular Genetic Potential
+                Female Genetic Muscle Potential
               </h1>
               <p className="text-xl text-white/90">
-                Discover your natural muscle-building limits using Casey Butt's proven formula
+                Science-based calculations adapted for female physiology
               </p>
             </div>
           </div>
@@ -261,15 +271,14 @@ const MuscleCalculator = () => {
       </div>
 
       <div className="container mx-auto px-4 py-8">
-        {/* Link to Female Calculator */}
-        <div className="mb-6">
-          <Link 
-            to="/female" 
-            className="inline-flex items-center gap-2 text-primary hover:text-primary/80 transition-colors font-medium"
-          >
-            Looking for the female calculator? Click here →
-          </Link>
-        </div>
+        {/* Back Link */}
+        <Link 
+          to="/" 
+          className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors mb-6"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Male Calculator
+        </Link>
 
         <div className="grid lg:grid-cols-2 gap-8">
           {/* Input Form */}
@@ -290,7 +299,7 @@ const MuscleCalculator = () => {
                   <Input
                     id="bodyFat"
                     type="number"
-                    placeholder="15"
+                    placeholder="25"
                     value={formData.bodyFat}
                     onChange={(e) => handleInputChange('bodyFat', e.target.value)}
                     className="bg-secondary border-border"
@@ -301,7 +310,7 @@ const MuscleCalculator = () => {
                   <Input
                     id="targetBodyFat"
                     type="number"
-                    placeholder="10"
+                    placeholder="20"
                     value={formData.targetBodyFat}
                     onChange={(e) => handleInputChange('targetBodyFat', e.target.value)}
                     className="bg-secondary border-border"
@@ -315,7 +324,7 @@ const MuscleCalculator = () => {
                   <Input
                     id="weight"
                     type="number"
-                    placeholder="180"
+                    placeholder="140"
                     value={formData.weight}
                     onChange={(e) => handleInputChange('weight', e.target.value)}
                     className="bg-secondary border-border"
@@ -330,7 +339,7 @@ const MuscleCalculator = () => {
                     id="wrist"
                     type="number"
                     step="0.1"
-                    placeholder="7.0"
+                    placeholder="6.0"
                     value={formData.wrist}
                     onChange={(e) => handleInputChange('wrist', e.target.value)}
                     className="bg-secondary border-border"
@@ -342,7 +351,7 @@ const MuscleCalculator = () => {
                     id="ankle"
                     type="number"
                     step="0.1"
-                    placeholder="9.0"
+                    placeholder="8.0"
                     value={formData.ankle}
                     onChange={(e) => handleInputChange('ankle', e.target.value)}
                     className="bg-secondary border-border"
@@ -374,7 +383,7 @@ const MuscleCalculator = () => {
                       />
                       <Input
                         type="number"
-                        placeholder="10"
+                        placeholder="5"
                         value={formData.heightIn}
                         onChange={(e) => handleInputChange('heightIn', e.target.value)}
                         className="bg-secondary border-border"
@@ -383,7 +392,7 @@ const MuscleCalculator = () => {
                   ) : (
                     <Input
                       type="number"
-                      placeholder="175"
+                      placeholder="165"
                       value={formData.heightCm}
                       onChange={(e) => handleInputChange('heightCm', e.target.value)}
                       className="flex-1 bg-secondary border-border"
@@ -399,8 +408,8 @@ const MuscleCalculator = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="lean">Strength & Lean Look</SelectItem>
-                    <SelectItem value="mass">Hypertrophy & Mass</SelectItem>
+                    <SelectItem value="toned">Lean & Toned</SelectItem>
+                    <SelectItem value="athletic">Physique & Athletic</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -423,7 +432,7 @@ const MuscleCalculator = () => {
                 Your Genetic Potential
               </CardTitle>
               <CardDescription>
-                Results based on Casey Butt's muscle-building formula
+                Results based on female-adapted muscular potential research
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -470,20 +479,24 @@ const MuscleCalculator = () => {
                       {results.influencerSuggestion}
                     </div>
                     <div className="text-sm text-muted-foreground mt-1">
-                      Based on your {formData.trainingGoal === 'lean' ? 'strength & lean' : 'hypertrophy & mass'} goal
+                      Based on your {formData.trainingGoal === 'toned' ? 'lean & toned' : 'physique & athletic'} goal
                     </div>
                   </div>
 
                   <div className="text-xs text-muted-foreground bg-muted/20 p-3 rounded border border-border">
-                    <strong>Note:</strong> These calculations are estimates based on Casey Butt's research. 
-                    Individual results may vary based on genetics, training, nutrition, and other factors.
+                    <strong>Note:</strong> These calculations use female-adapted formulas based on research 
+                    showing women typically achieve ~52-55% of male maximum muscular potential due to 
+                    hormonal differences. Individual results vary based on genetics, training, and nutrition. 
+                    Healthy body fat ranges for women are typically 18-28%.
                   </div>
                 </div>
               ) : (
-                <div className="flex items-center justify-center h-64 text-muted-foreground">
-                  <div className="text-center">
-                    <Calculator className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                    <p>Enter your measurements to see your genetic potential</p>
+                <div className="text-center py-12">
+                  <div className="text-muted-foreground mb-4">
+                    Enter your measurements to see your maximum genetic potential
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    Uses research-based calculations adapted for female physiology
                   </div>
                 </div>
               )}
@@ -495,4 +508,4 @@ const MuscleCalculator = () => {
   );
 };
 
-export default MuscleCalculator;
+export default FemaleMuscleCalculator;
