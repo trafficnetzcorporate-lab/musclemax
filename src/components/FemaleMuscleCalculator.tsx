@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calculator, Target, TrendingUp, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import fitnessHero from '@/assets/fitness-hero.jpg';
+import femaleFitnessHero from '@/assets/female-fitness-hero.jpg';
 
 interface CalculationResults {
   currentLeanBodyMass: number;
@@ -254,7 +254,7 @@ const FemaleMuscleCalculator = () => {
       <div className="relative overflow-hidden">
         <div 
           className="h-64 bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: `url(${fitnessHero})` }}
+          style={{ backgroundImage: `url(${femaleFitnessHero})` }}
         >
           <div className="absolute inset-0 bg-black/50" />
           <div className="relative h-full flex items-center justify-center text-center">
