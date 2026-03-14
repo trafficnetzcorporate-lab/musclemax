@@ -262,12 +262,18 @@ const MuscleCalculator = () => {
 
       <div className="container mx-auto px-4 py-8">
         {/* Link to Female Calculator */}
-        <div className="mb-6">
+        <div className="mb-6 flex items-center justify-between">
+          <Link 
+            to="/" 
+            className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors text-sm"
+          >
+            ← Back to EMOM App
+          </Link>
           <Link 
             to="/female" 
             className="inline-flex items-center gap-2 text-primary hover:text-primary/80 transition-colors font-medium"
           >
-            Looking for the female calculator? Click here →
+            Female calculator →
           </Link>
         </div>
 
