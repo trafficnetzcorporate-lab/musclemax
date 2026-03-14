@@ -2,8 +2,8 @@ import { useState, useCallback, useEffect } from 'react';
 import { UserProfile, ExerciseProgress, WorkoutSession, ExerciseVariation, WorkoutPhase, XP_REWARDS, LEVEL_THRESHOLDS } from '@/types/emom';
 import { getDefaultUnlocked } from '@/lib/exercises';
 import { processWorkout, calculateWorkoutXp, getBaselinePrescription } from '@/lib/emom-algorithm';
-
-const STORAGE_KEY = 'emom_user_profile';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 function getLevel(xp: number): number {
   for (let i = LEVEL_THRESHOLDS.length - 1; i >= 0; i--) {
@@ -39,49 +39,94 @@ function createDefaultProfile(): UserProfile {
   };
 }
 
-function loadProfile(): UserProfile {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) return JSON.parse(stored);
-  } catch {}
-  return createDefaultProfile();
-}
-
 export function useEmomStore() {
-  const [profile, setProfile] = useState<UserProfile>(loadProfile);
+  const { user } = useAuth();
+  const [profile, setProfile] = useState<UserProfile>(createDefaultProfile);
+  const [loaded, setLoaded] = useState(false);
 
+  // Load from Supabase on mount / user change
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
-  }, [profile]);
+    if (!user) {
+      setProfile(createDefaultProfile());
+      setLoaded(false);
+      return;
+    }
+
+    const loadFromDb = async () => {
+      try {
+        // Load profile
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+
+        // Load exercise progress
+        const { data: progressData } = await supabase
+          .from('exercise_progress')
+          .select('*')
+          .eq('user_id', user.id);
+
+        // Load workout sessions
+        const { data: sessionsData } = await supabase
+          .from('workout_sessions')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('workout_date', { ascending: true });
+
+        if (profileData) {
+          const exerciseProgress: Record<string, ExerciseProgress> = {};
+
+          if (progressData) {
+            for (const ep of progressData) {
+              const sessions = (sessionsData || [])
+                .filter(s => s.exercise_id === ep.exercise_id)
+                .map(s => ({
+                  id: s.id,
+                  date: s.workout_date,
+                  exerciseId: s.exercise_id as ExerciseVariation,
+                  phase: s.phase as WorkoutPhase,
+                  sets: s.sets as any,
+                  totalReps: s.total_reps,
+                  notes: s.notes || undefined,
+                }));
+
+              exerciseProgress[ep.exercise_id] = {
+                exerciseId: ep.exercise_id as ExerciseVariation,
+                currentPhase: ep.current_phase as WorkoutPhase,
+                currentPrescription: ep.current_prescription as number[],
+                totalWorkouts: ep.total_workouts,
+                bestTotalReps: ep.best_total_reps,
+                history: sessions,
+                mastered: ep.mastered,
+                masteredDate: ep.mastered_date || undefined,
+                xp: ep.xp,
+              };
+            }
+          }
+
+          setProfile({
+            name: profileData.name,
+            level: profileData.level,
+            totalXp: profileData.total_xp,
+            streak: profileData.streak,
+            lastWorkoutDate: profileData.last_workout_date || undefined,
+            exerciseProgress,
+            unlockedExercises: (profileData.unlocked_exercises || []) as ExerciseVariation[],
+          });
+        }
+      } catch (err) {
+        console.error('Failed to load profile:', err);
+      }
+      setLoaded(true);
+    };
+
+    loadFromDb();
+  }, [user]);
 
   const getExerciseProgress = useCallback((exerciseId: string): ExerciseProgress | null => {
     return profile.exerciseProgress[exerciseId] || null;
   }, [profile]);
-
-  const startExercise = useCallback((exerciseId: ExerciseVariation) => {
-    setProfile(prev => {
-      if (prev.exerciseProgress[exerciseId]) return prev;
-      return {
-        ...prev,
-        exerciseProgress: {
-          ...prev.exerciseProgress,
-          [exerciseId]: {
-            exerciseId,
-            currentPhase: 'baseline' as WorkoutPhase,
-            currentPrescription: getBaselinePrescription(),
-            totalWorkouts: 0,
-            bestTotalReps: 0,
-            history: [],
-            mastered: false,
-            xp: 0,
-          },
-        },
-        unlockedExercises: prev.unlockedExercises.includes(exerciseId)
-          ? prev.unlockedExercises
-          : [...prev.unlockedExercises, exerciseId],
-      };
-    });
-  }, []);
 
   const completeWorkout = useCallback((session: WorkoutSession) => {
     setProfile(prev => {
@@ -105,7 +150,6 @@ export function useEmomStore() {
         xp: progress.xp + xpEarned,
       };
 
-      // Check streak
       const today = new Date().toDateString();
       const lastWorkout = prev.lastWorkoutDate ? new Date(prev.lastWorkoutDate).toDateString() : null;
       const yesterday = new Date(Date.now() - 86400000).toDateString();
@@ -117,35 +161,77 @@ export function useEmomStore() {
       }
 
       const newTotalXp = prev.totalXp + xpEarned;
+      const newLevel = getLevel(newTotalXp);
 
-      // Unlock exercises if mastered
-      let newUnlocked = [...prev.unlockedExercises];
-      if (isMastery) {
-        // Import all exercises and check which ones this unlocks
-        // We'll handle this in the component layer
+      // Persist to Supabase async
+      if (user) {
+        // Save workout session
+        supabase.from('workout_sessions').insert({
+          id: session.id,
+          user_id: user.id,
+          exercise_id: session.exerciseId,
+          phase: session.phase,
+          sets: session.sets as any,
+          total_reps: totalReps,
+          notes: session.notes || null,
+          workout_date: session.date,
+        }).then();
+
+        // Update exercise progress
+        supabase.from('exercise_progress').update({
+          current_phase: nextPhase,
+          current_prescription: nextPrescription,
+          total_workouts: updatedProgress.totalWorkouts,
+          best_total_reps: updatedProgress.bestTotalReps,
+          mastered: updatedProgress.mastered,
+          mastered_date: updatedProgress.masteredDate || null,
+          xp: updatedProgress.xp,
+        }).eq('user_id', user.id).eq('exercise_id', session.exerciseId).then();
+
+        // Update profile
+        supabase.from('profiles').update({
+          total_xp: newTotalXp,
+          level: newLevel,
+          streak: newStreak,
+          last_workout_date: new Date().toISOString(),
+        }).eq('user_id', user.id).then();
       }
 
       return {
         ...prev,
         totalXp: newTotalXp,
-        level: getLevel(newTotalXp),
+        level: newLevel,
         streak: newStreak,
         lastWorkoutDate: new Date().toISOString(),
         exerciseProgress: {
           ...prev.exerciseProgress,
           [session.exerciseId]: updatedProgress,
         },
-        unlockedExercises: newUnlocked,
       };
     });
-  }, []);
+  }, [user]);
 
   const unlockExercise = useCallback((exerciseId: ExerciseVariation) => {
     setProfile(prev => {
       if (prev.unlockedExercises.includes(exerciseId)) return prev;
+
+      const newUnlocked = [...prev.unlockedExercises, exerciseId];
+
+      // Persist to Supabase
+      if (user) {
+        supabase.from('profiles').update({
+          unlocked_exercises: newUnlocked,
+        }).eq('user_id', user.id).then();
+
+        supabase.from('exercise_progress').insert({
+          user_id: user.id,
+          exercise_id: exerciseId,
+        }).then();
+      }
+
       return {
         ...prev,
-        unlockedExercises: [...prev.unlockedExercises, exerciseId],
+        unlockedExercises: newUnlocked,
         exerciseProgress: {
           ...prev.exerciseProgress,
           [exerciseId]: {
@@ -161,17 +247,17 @@ export function useEmomStore() {
         },
       };
     });
-  }, []);
+  }, [user]);
 
   const resetProfile = useCallback(() => {
-    const fresh = createDefaultProfile();
-    setProfile(fresh);
+    setProfile(createDefaultProfile());
   }, []);
 
   return {
     profile,
+    loaded,
     getExerciseProgress,
-    startExercise,
+    startExercise: useCallback(() => {}, []),
     completeWorkout,
     unlockExercise,
     resetProfile,
