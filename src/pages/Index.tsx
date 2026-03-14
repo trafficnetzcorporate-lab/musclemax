@@ -1,7 +1,7 @@
-import MuscleCalculator from '@/components/MuscleCalculator';
+import EmomDashboard from '@/components/emom/EmomDashboard';
 
 const Index = () => {
-  return <MuscleCalculator />;
+  return <EmomDashboard />;
 };
 
 export default Index;

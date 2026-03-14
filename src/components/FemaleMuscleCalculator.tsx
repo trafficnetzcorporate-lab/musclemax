@@ -273,7 +273,7 @@ const FemaleMuscleCalculator = () => {
       <div className="container mx-auto px-4 py-8">
         {/* Back Link */}
         <Link 
-          to="/" 
+          to="/calculator" 
           className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors mb-6"
         >
           <ArrowLeft className="w-4 h-4" />
