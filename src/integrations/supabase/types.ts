@@ -14,7 +14,159 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      exercise_progress: {
+        Row: {
+          best_total_reps: number
+          created_at: string
+          current_phase: string
+          current_prescription: number[]
+          exercise_id: string
+          id: string
+          mastered: boolean
+          mastered_date: string | null
+          total_workouts: number
+          updated_at: string
+          user_id: string
+          xp: number
+        }
+        Insert: {
+          best_total_reps?: number
+          created_at?: string
+          current_phase?: string
+          current_prescription?: number[]
+          exercise_id: string
+          id?: string
+          mastered?: boolean
+          mastered_date?: string | null
+          total_workouts?: number
+          updated_at?: string
+          user_id: string
+          xp?: number
+        }
+        Update: {
+          best_total_reps?: number
+          created_at?: string
+          current_phase?: string
+          current_prescription?: number[]
+          exercise_id?: string
+          id?: string
+          mastered?: boolean
+          mastered_date?: string | null
+          total_workouts?: number
+          updated_at?: string
+          user_id?: string
+          xp?: number
+        }
+        Relationships: []
+      }
+      leg_workout_logs: {
+        Row: {
+          ab_rest_seconds: number
+          ab_sets: number
+          created_at: string
+          id: string
+          squat_reps: number
+          squat_sets: number
+          user_id: string
+          workout_date: string
+        }
+        Insert: {
+          ab_rest_seconds: number
+          ab_sets: number
+          created_at?: string
+          id?: string
+          squat_reps: number
+          squat_sets: number
+          user_id: string
+          workout_date?: string
+        }
+        Update: {
+          ab_rest_seconds?: number
+          ab_sets?: number
+          created_at?: string
+          id?: string
+          squat_reps?: number
+          squat_sets?: number
+          user_id?: string
+          workout_date?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          id: string
+          last_workout_date: string | null
+          level: number
+          name: string
+          streak: number
+          total_xp: number
+          unlocked_exercises: string[]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_workout_date?: string | null
+          level?: number
+          name?: string
+          streak?: number
+          total_xp?: number
+          unlocked_exercises?: string[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_workout_date?: string | null
+          level?: number
+          name?: string
+          streak?: number
+          total_xp?: number
+          unlocked_exercises?: string[]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      workout_sessions: {
+        Row: {
+          created_at: string
+          exercise_id: string
+          id: string
+          notes: string | null
+          phase: string
+          sets: Json
+          total_reps: number
+          user_id: string
+          workout_date: string
+        }
+        Insert: {
+          created_at?: string
+          exercise_id: string
+          id?: string
+          notes?: string | null
+          phase: string
+          sets?: Json
+          total_reps?: number
+          user_id: string
+          workout_date?: string
+        }
+        Update: {
+          created_at?: string
+          exercise_id?: string
+          id?: string
+          notes?: string | null
+          phase?: string
+          sets?: Json
+          total_reps?: number
+          user_id?: string
+          workout_date?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
