@@ -11,6 +11,7 @@ import SkillTree from './SkillTree';
 import WorkoutHistory from './WorkoutHistory';
 import WorkoutSummary from './WorkoutSummary';
 import LegSection from './LegSection';
+import WeeklyProgressChart from './WeeklyProgressChart';
 import { Link } from 'react-router-dom';
 import {
   Flame, Trophy, Zap, Target, TrendingUp, Dumbbell,
