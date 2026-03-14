@@ -11,6 +11,7 @@ import SkillTree from './SkillTree';
 import WorkoutHistory from './WorkoutHistory';
 import WorkoutSummary from './WorkoutSummary';
 import LegSection from './LegSection';
+import WeeklyProgressChart from './WeeklyProgressChart';
 import { Link } from 'react-router-dom';
 import {
   Flame, Trophy, Zap, Target, TrendingUp, Dumbbell,
@@ -312,6 +313,11 @@ export default function EmomDashboard() {
             <LegSection />
           </TabsContent>
         </Tabs>
+
+        {/* Weekly Progress Chart */}
+        <div className="mt-6">
+          <WeeklyProgressChart exerciseProgress={profile.exerciseProgress} />
+        </div>
 
         {/* How it works */}
         <Card className="border-border mt-6 mb-8">
