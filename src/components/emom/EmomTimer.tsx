@@ -14,8 +14,17 @@ interface EmomTimerProps {
   onCancel: () => void;
 }
 
-const TOTAL_TIME = 600; // 10 minutes in seconds
+const TOTAL_TIME = 600;
 const SET_INTERVAL_SEC = 60;
+
+function triggerHaptic(pattern: 'tick' | 'warning' | 'start') {
+  if (!navigator.vibrate) return;
+  switch (pattern) {
+    case 'tick': navigator.vibrate(50); break;
+    case 'warning': navigator.vibrate([100, 50, 100]); break;
+    case 'start': navigator.vibrate([200, 100, 200, 100, 200]); break;
+  }
+}
 
 export default function EmomTimer({ exerciseId, phase, prescription, onComplete, onCancel }: EmomTimerProps) {
   const exercise = getExerciseById(exerciseId);
@@ -29,21 +38,37 @@ export default function EmomTimer({ exerciseId, phase, prescription, onComplete,
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const audioRef = useRef<AudioContext | null>(null);
 
-  const playBeep = useCallback(() => {
+  const getAudioCtx = useCallback(() => {
+    if (!audioRef.current) audioRef.current = new AudioContext();
+    return audioRef.current;
+  }, []);
+
+  const playBeep = useCallback((freq = 880, duration = 0.15, vol = 0.3) => {
     try {
-      if (!audioRef.current) audioRef.current = new AudioContext();
-      const ctx = audioRef.current;
+      const ctx = getAudioCtx();
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.connect(gain);
       gain.connect(ctx.destination);
-      osc.frequency.value = 880;
+      osc.frequency.value = freq;
       osc.type = 'square';
-      gain.gain.value = 0.3;
+      gain.gain.setValueAtTime(vol, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
       osc.start();
-      osc.stop(ctx.currentTime + 0.15);
+      osc.stop(ctx.currentTime + duration);
     } catch {}
-  }, []);
+  }, [getAudioCtx]);
+
+  const playCountdownBeep = useCallback((secondsLeft: number) => {
+    if (secondsLeft > 0) {
+      playBeep(660, 0.1, 0.2);
+      triggerHaptic('tick');
+    } else {
+      // New minute — big beep
+      playBeep(1100, 0.25, 0.4);
+      triggerHaptic('warning');
+    }
+  }, [playBeep]);
 
   // Timer logic
   useEffect(() => {
@@ -55,30 +80,29 @@ export default function EmomTimer({ exerciseId, phase, prescription, onComplete,
         if (next <= 0) {
           setIsRunning(false);
           setIsFinished(true);
+          playBeep(1320, 0.5, 0.5);
+          triggerHaptic('start');
           return 0;
         }
-        // Beep on new minute
-        if (next % SET_INTERVAL_SEC === 0 && next < TOTAL_TIME) {
-          playBeep();
-          // Auto-advance set if user hasn't logged yet
-          setCurrentSet(prev => {
-            const newSet = Math.min(prev + 1, 9);
-            return newSet;
-          });
-          setWaitingForInput(true);
+        const secInMinute = next % SET_INTERVAL_SEC;
+
+        // Last 5 seconds countdown
+        if (secInMinute <= 5 && secInMinute > 0) {
+          playCountdownBeep(secInMinute);
         }
-        // Warning beeps at 3, 2, 1
-        if (next % SET_INTERVAL_SEC <= 3 && next % SET_INTERVAL_SEC > 0) {
-          playBeep();
+
+        // New minute boundary
+        if (secInMinute === 0 && next < TOTAL_TIME) {
+          playCountdownBeep(0);
+          setCurrentSet(prev => Math.min(prev + 1, 9));
+          setWaitingForInput(true);
         }
         return next;
       });
     }, 1000);
 
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [isRunning, isFinished, playBeep]);
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [isRunning, isFinished, playBeep, playCountdownBeep]);
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -86,8 +110,8 @@ export default function EmomTimer({ exerciseId, phase, prescription, onComplete,
     return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
-  const currentMinute = Math.floor((TOTAL_TIME - timeLeft) / SET_INTERVAL_SEC);
   const secondsInSet = timeLeft % SET_INTERVAL_SEC || (timeLeft === TOTAL_TIME ? 60 : 0);
+  const isCountdown = isRunning && secondsInSet <= 5 && secondsInSet > 0;
 
   const logReps = useCallback((reps: number) => {
     setSets(prev => prev.map((s, i) =>
@@ -95,6 +119,7 @@ export default function EmomTimer({ exerciseId, phase, prescription, onComplete,
     ));
     setRepInput('');
     setWaitingForInput(false);
+    triggerHaptic('tick');
   }, [currentSet]);
 
   const quickLog = useCallback((reps: number) => {
@@ -104,7 +129,8 @@ export default function EmomTimer({ exerciseId, phase, prescription, onComplete,
   const handleStart = () => {
     setIsRunning(true);
     setWaitingForInput(true);
-    playBeep();
+    playBeep(1100, 0.25, 0.4);
+    triggerHaptic('start');
   };
 
   const handleFinish = () => {
@@ -141,19 +167,40 @@ export default function EmomTimer({ exerciseId, phase, prescription, onComplete,
       </div>
 
       {/* Timer Display */}
-      <Card className="border-primary/30 bg-card">
+      <Card className={`border-primary/30 bg-card transition-all duration-300 ${isCountdown ? 'ring-2 ring-primary/50 shadow-[0_0_30px_hsl(45_93%_58%/0.2)]' : ''}`}>
         <CardContent className="p-6 text-center">
-          <div className="text-6xl font-mono font-bold text-foreground tracking-wider">
+          <div className={`text-6xl font-mono font-bold tracking-wider transition-all duration-300 ${
+            isCountdown ? 'text-primary scale-110' : 'text-foreground'
+          }`}>
             {formatTime(timeLeft)}
           </div>
+
+          {/* Countdown visual */}
+          {isCountdown && (
+            <div className="mt-3 flex justify-center gap-2">
+              {[5, 4, 3, 2, 1].map(n => (
+                <div
+                  key={n}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 ${
+                    secondsInSet <= n
+                      ? 'bg-primary text-primary-foreground scale-110'
+                      : 'bg-secondary text-muted-foreground'
+                  }`}
+                >
+                  {n}
+                </div>
+              ))}
+            </div>
+          )}
+
           <div className="mt-2 text-sm text-muted-foreground">
             Set {Math.min(currentSet + 1, 10)} of 10
           </div>
-          
+
           {/* Progress bar */}
           <div className="mt-4 h-2 bg-secondary rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-primary transition-all duration-1000 ease-linear rounded-full"
+            <div
+              className={`h-full rounded-full transition-all duration-1000 ease-linear ${isCountdown ? 'bg-primary animate-pulse' : 'bg-primary'}`}
               style={{ width: `${((TOTAL_TIME - timeLeft) / TOTAL_TIME) * 100}%` }}
             />
           </div>
@@ -206,10 +253,10 @@ export default function EmomTimer({ exerciseId, phase, prescription, onComplete,
                   variant={sets[currentSet]?.actualReps === n ? 'default' : 'outline'}
                   size="sm"
                   className={`w-10 h-10 text-sm font-bold ${
-                    sets[currentSet]?.actualReps === n 
-                      ? 'bg-primary text-primary-foreground' 
-                      : n > 12 && !sets[currentSet]?.isAmrap 
-                        ? 'opacity-40' 
+                    sets[currentSet]?.actualReps === n
+                      ? 'bg-primary text-primary-foreground'
+                      : n > 12 && !sets[currentSet]?.isAmrap
+                        ? 'opacity-40'
                         : ''
                   }`}
                   onClick={() => quickLog(n)}
