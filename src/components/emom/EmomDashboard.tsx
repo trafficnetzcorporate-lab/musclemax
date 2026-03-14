@@ -4,23 +4,36 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useEmomStore } from '@/hooks/useEmomStore';
 import { getExerciseById, ALL_EXERCISES } from '@/lib/exercises';
-import { ExerciseVariation, LEVEL_THRESHOLDS } from '@/types/emom';
+import { ExerciseVariation, LEVEL_THRESHOLDS, WorkoutSession } from '@/types/emom';
+import { processWorkout, calculateWorkoutXp } from '@/lib/emom-algorithm';
 import EmomTimer from './EmomTimer';
 import SkillTree from './SkillTree';
 import WorkoutHistory from './WorkoutHistory';
+import WorkoutSummary from './WorkoutSummary';
+import LegSection from './LegSection';
 import { Link } from 'react-router-dom';
 import {
   Flame, Trophy, Zap, Target, TrendingUp, Dumbbell,
   ArrowLeft, Star, Shield, ChevronRight, Calculator
 } from 'lucide-react';
 
-type View = 'dashboard' | 'exercise' | 'workout';
+type View = 'dashboard' | 'exercise' | 'workout' | 'summary';
+
+interface SummaryData {
+  session: WorkoutSession;
+  previousSession: WorkoutSession | null;
+  xpEarned: number;
+  isMastery: boolean;
+  isPR: boolean;
+  nextPrescription: number[];
+}
 
 export default function EmomDashboard() {
   const { profile, getExerciseProgress, completeWorkout, unlockExercise } = useEmomStore();
   const [view, setView] = useState<View>('dashboard');
   const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'push' | 'pull'>('push');
+  const [activeTab, setActiveTab] = useState<'push' | 'pull' | 'legs'>('push');
+  const [summaryData, setSummaryData] = useState<SummaryData | null>(null);
 
   const nextLevelXp = LEVEL_THRESHOLDS[Math.min(profile.level, LEVEL_THRESHOLDS.length - 1)] || 99999;
   const prevLevelXp = LEVEL_THRESHOLDS[Math.max(profile.level - 2, 0)] || 0;
@@ -39,22 +52,62 @@ export default function EmomDashboard() {
     setView('workout');
   };
 
-  const handleCompleteWorkout = (session: any) => {
-    completeWorkout(session);
-    
-    // Check unlocks
+  const handleCompleteWorkout = (session: WorkoutSession) => {
     const progress = getExerciseProgress(session.exerciseId);
-    if (progress?.mastered) {
+    if (!progress) return;
+
+    // Calculate summary data BEFORE completing
+    const { nextPrescription, nextPhase } = processWorkout(session, progress);
+    const isMastery = nextPhase === 'completed';
+    const xpEarned = calculateWorkoutXp(session, isMastery);
+    const totalReps = session.sets.reduce((s, set) => s + (set.actualReps || 0), 0);
+    const isPR = totalReps > progress.bestTotalReps;
+    const previousSession = progress.history.length > 0 ? progress.history[progress.history.length - 1] : null;
+
+    setSummaryData({
+      session,
+      previousSession,
+      xpEarned,
+      isMastery,
+      isPR,
+      nextPrescription,
+    });
+
+    // Now complete the workout
+    completeWorkout(session);
+
+    // Check unlocks
+    if (isMastery) {
       ALL_EXERCISES
         .filter(e => e.prerequisiteId === session.exerciseId)
         .forEach(e => unlockExercise(e.id));
     }
-    
-    setView('exercise');
+
+    setView('summary');
   };
 
   const selectedProgress = selectedExercise ? getExerciseProgress(selectedExercise) : null;
   const selectedInfo = selectedExercise ? getExerciseById(selectedExercise) : null;
+
+  // --- SUMMARY VIEW ---
+  if (view === 'summary' && summaryData) {
+    return (
+      <div className="min-h-screen bg-background p-4 max-w-lg mx-auto">
+        <WorkoutSummary
+          session={summaryData.session}
+          previousSession={summaryData.previousSession}
+          xpEarned={summaryData.xpEarned}
+          isMastery={summaryData.isMastery}
+          isPR={summaryData.isPR}
+          nextPrescription={summaryData.nextPrescription}
+          onContinue={() => {
+            setSummaryData(null);
+            setView('exercise');
+          }}
+        />
+      </div>
+    );
+  }
 
   // --- WORKOUT VIEW ---
   if (view === 'workout' && selectedExercise && selectedProgress) {
@@ -110,12 +163,11 @@ export default function EmomDashboard() {
               {phaseDescriptions[selectedProgress.currentPhase]}
             </p>
 
-            {/* Next workout prescription */}
             {selectedProgress.currentPhase !== 'completed' && (
               <>
                 <div className="grid grid-cols-10 gap-1 mb-3">
                   {selectedProgress.currentPrescription.map((reps, i) => (
-                    <div 
+                    <div
                       key={i}
                       className={`text-center rounded py-1 text-xs font-mono font-bold ${
                         selectedProgress.currentPhase === 'amrap' && i === 9
@@ -163,7 +215,6 @@ export default function EmomDashboard() {
           </Card>
         </div>
 
-        {/* History */}
         <WorkoutHistory exerciseId={selectedExercise} progress={selectedProgress} />
       </div>
     );
@@ -214,7 +265,7 @@ export default function EmomDashboard() {
                 </div>
               </div>
               <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                <div 
+                <div
                   className="h-full bg-primary rounded-full transition-all"
                   style={{ width: `${Math.min(levelProgress, 100)}%` }}
                 />
@@ -227,15 +278,18 @@ export default function EmomDashboard() {
         </div>
       </div>
 
-      {/* Skill Trees */}
+      {/* Tabs */}
       <div className="max-w-lg mx-auto px-4 py-4">
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'push' | 'pull')}>
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'push' | 'pull' | 'legs')}>
           <TabsList className="w-full mb-4">
             <TabsTrigger value="push" className="flex-1 gap-1">
               <Dumbbell className="w-3.5 h-3.5" /> Push
             </TabsTrigger>
             <TabsTrigger value="pull" className="flex-1 gap-1">
               <TrendingUp className="w-3.5 h-3.5" /> Pull
+            </TabsTrigger>
+            <TabsTrigger value="legs" className="flex-1 gap-1">
+              🦵 Legs
             </TabsTrigger>
           </TabsList>
           <TabsContent value="push">
@@ -253,6 +307,9 @@ export default function EmomDashboard() {
               exerciseProgress={profile.exerciseProgress}
               onSelectExercise={handleSelectExercise}
             />
+          </TabsContent>
+          <TabsContent value="legs">
+            <LegSection />
           </TabsContent>
         </Tabs>
 
