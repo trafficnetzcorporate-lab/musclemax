@@ -314,6 +314,11 @@ export default function EmomDashboard() {
           </TabsContent>
         </Tabs>
 
+        {/* Weekly Progress Chart */}
+        <div className="mt-6">
+          <WeeklyProgressChart exerciseProgress={profile.exerciseProgress} />
+        </div>
+
         {/* How it works */}
         <Card className="border-border mt-6 mb-8">
           <CardContent className="p-4">
