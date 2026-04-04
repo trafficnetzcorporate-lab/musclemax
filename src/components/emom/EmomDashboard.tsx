@@ -31,7 +31,7 @@ interface SummaryData {
 
 export default function EmomDashboard() {
   const { profile, getExerciseProgress, completeWorkout, unlockExercise } = useEmomStore();
-  const { signOut } = useAuth();
+  
   const [view, setView] = useState<View>('dashboard');
   const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'push' | 'pull' | 'legs'>('push');
