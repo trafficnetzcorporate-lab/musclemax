@@ -13,10 +13,9 @@ import WorkoutSummary from './WorkoutSummary';
 import LegSection from './LegSection';
 import WeeklyProgressChart from './WeeklyProgressChart';
 import { Link } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
 import {
   Flame, Trophy, Zap, Target, TrendingUp, Dumbbell,
-  ArrowLeft, Star, Shield, ChevronRight, Calculator, LogOut
+  ArrowLeft, Star, Shield, ChevronRight, Calculator
 } from 'lucide-react';
 
 type View = 'dashboard' | 'exercise' | 'workout' | 'summary';
@@ -32,7 +31,7 @@ interface SummaryData {
 
 export default function EmomDashboard() {
   const { profile, getExerciseProgress, completeWorkout, unlockExercise } = useEmomStore();
-  const { signOut } = useAuth();
+  
   const [view, setView] = useState<View>('dashboard');
   const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'push' | 'pull' | 'legs'>('push');
@@ -237,9 +236,6 @@ export default function EmomDashboard() {
             <Link to="/calculator" className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors">
               <Calculator className="w-3.5 h-3.5" /> Calc
             </Link>
-            <button onClick={signOut} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive transition-colors">
-              <LogOut className="w-3.5 h-3.5" />
-            </button>
           </div>
 
           {/* Level & XP */}
