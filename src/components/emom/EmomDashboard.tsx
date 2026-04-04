@@ -236,9 +236,6 @@ export default function EmomDashboard() {
             <Link to="/calculator" className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors">
               <Calculator className="w-3.5 h-3.5" /> Calc
             </Link>
-            <button onClick={signOut} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive transition-colors">
-              <LogOut className="w-3.5 h-3.5" />
-            </button>
           </div>
 
           {/* Level & XP */}
