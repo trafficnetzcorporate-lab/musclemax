@@ -1,21 +1,33 @@
-## Goal
+## Why the old image is still showing
 
-Replace `public/og-image.jpg` with a new app-icon-style logo inspired by the uploaded Adonis Index reference: a bold, symbolic muscular torso silhouette emphasizing the V-taper (broad shoulders → narrow waist) that signals "perfect physique" instantly.
+iOS aggressively caches `apple-touch-icon` and OG images by URL. Because the file has kept the same path (`/og-image.jpg`) through every regeneration, iOS Safari, the iOS share sheet ("Add to Home Screen"), and social-preview crawlers (LinkedIn, iMessage, Facebook) all serve their cached copy. Query-string cache-busters (`?v=2`) work for browsers but iOS often ignores them on `apple-touch-icon` — the only reliable fix is a **new filename**.
 
-## Direction
+## Fix
 
-- **Format**: 1024×1024 square, iOS app-icon proportions with implied rounded-corner composition (so it looks native when used as `apple-touch-icon`).
-- **Subject**: Stylized front-facing muscular torso silhouette — shoulders, chest, abs, arms framing the sides. Symbolic and graphic, not photorealistic. No head, no face, no legs, no veins/skin detail that reads "human photo."
-- **Style**: High-contrast vector/screenprint look — think Nike, Gymshark, classical Greek statue iconography reduced to a clean mark. Sharp negative-space cuts define the musculature.
-- **Color**: Matte black background. Torso rendered in lustrous metallic gold (matches the project's golden-accent design system). Optional subtle gold rim-light to give it dimension.
-- **No text, no numbers, no measurement lines** — pure symbol.
-- **Mood**: Aspirational, premium, instantly readable at favicon size.
+1. **Rename the asset to a versioned path** so every cache treats it as a brand-new resource.
+   - Copy current `public/og-image.jpg` → `public/og-image-v2.jpg`
+   - Delete the old `public/og-image.jpg` (so stale crawlers get a 404 instead of the old image)
+
+2. **Update every reference in `index.html`** from `/og-image.jpg` to `/og-image-v2.jpg`:
+   - `<link rel="apple-touch-icon">`
+   - `<meta property="og:image">`
+   - `<meta name="twitter:image">`
+
+3. **Add iOS-friendly icon sizing hints** so the home-screen icon picks the right asset:
+   - Add `sizes="180x180"` to the apple-touch-icon link (iOS prefers this exact size; our image is 1024×1024 so iOS will downscale cleanly).
+   - Add `<link rel="apple-touch-icon-precomposed" href="/og-image-v2.jpg">` as a fallback for older iOS Add-to-Home-Screen behavior.
+
+4. **Tell the user how to force-refresh** (no code can override what's already on their phone):
+   - iOS Home Screen: long-press the existing Muscle Max icon → Remove → Delete from Home Screen, then re-add. iOS caches the icon at install time and never refetches.
+   - Safari preview: Settings → Safari → Clear History and Website Data, OR open the site in a Private tab.
+   - Social previews (iMessage/LinkedIn/etc.): use each platform's debugger (e.g. Facebook Sharing Debugger, LinkedIn Post Inspector) to force a re-scrape, or wait — they re-crawl on their own schedule.
 
 ## Files touched
 
-- `public/og-image.jpg` — regenerated (referenced by OG tags, Twitter card, and `apple-touch-icon` in `index.html`; no HTML changes needed).
+- `public/og-image-v2.jpg` (new — copy of current image)
+- `public/og-image.jpg` (deleted)
+- `index.html` (three URL updates + icon sizing hints)
 
-## QA
+## Why not a query string
 
-- Inspect the generated image at full size and mentally at 60×60 (favicon scale) to confirm the V-taper silhouette still reads.
-- Confirm zero text/numerals were rendered (image models occasionally hallucinate letters — regenerate if so).
+`?v=2` works in normal `<img>` requests but iOS's Add-to-Home-Screen and many social crawlers strip or ignore query strings on icon URLs. Renaming the file is the only fix that works across all of them.
