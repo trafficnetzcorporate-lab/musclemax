@@ -5,6 +5,7 @@ export type PushVariation =
   | 'diamond_pushup'
   | 'wide_pushup'
   | 'decline_pushup'
+  | 'dips'
   | 'pike_pushup'
   | 'archer_pushup'
   | 'pseudo_planche_pushup'
