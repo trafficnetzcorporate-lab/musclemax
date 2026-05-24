@@ -41,6 +41,16 @@ export const PUSH_EXERCISES: ExerciseInfo[] = [
     icon: '📐',
   },
   {
+    id: 'dips',
+    name: 'Dips',
+    category: 'push',
+    tier: 2,
+    description: 'Parallel bars or sturdy chairs. Heavy chest, tricep, and front delt builder.',
+    prerequisiteId: 'regular_pushup',
+    requiredRepsToUnlock: 120,
+    icon: '🔻',
+  },
+  {
     id: 'pike_pushup',
     name: 'Pike Push-Up',
     category: 'push',

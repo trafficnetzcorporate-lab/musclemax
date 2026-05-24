@@ -20,9 +20,84 @@ const SET_INTERVAL_SEC = 60;
 function triggerHaptic(pattern: 'tick' | 'warning' | 'start') {
   if (!navigator.vibrate) return;
   switch (pattern) {
-    case 'tick': navigator.vibrate(50); break;
-    case 'warning': navigator.vibrate([100, 50, 100]); break;
-    case 'start': navigator.vibrate([200, 100, 200, 100, 200]); break;
+    case 'tick': navigator.vibrate(80); break;
+    case 'warning': navigator.vibrate([180, 60, 180]); break;
+    case 'start': navigator.vibrate([400, 100, 400, 100, 600]); break;
+  }
+}
+
+/* ---------- AUDIO: jarring "heavy clock thump" pre-scheduled in Web Audio ---------- */
+/**
+ * Schedule a single heavy "echoing clock tick" at a specific AudioContext time.
+ * Sound design: low sine thump (60Hz → 40Hz pitch drop) + filtered noise transient
+ * + long exponential decay to mimic reverberation in a large hall.
+ */
+function scheduleHeavyTick(ctx: AudioContext, when: number, intensity: 'soft' | 'hard') {
+  const t = Math.max(when, ctx.currentTime);
+  const isHard = intensity === 'hard';
+  const peak = isHard ? 0.9 : 0.55;
+  const decay = isHard ? 1.8 : 0.9;
+
+  // 1) Low sine thump with pitch drop — body of the tick
+  const osc = ctx.createOscillator();
+  const oscGain = ctx.createGain();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(isHard ? 90 : 75, t);
+  osc.frequency.exponentialRampToValueAtTime(isHard ? 40 : 50, t + 0.12);
+  oscGain.gain.setValueAtTime(0.0001, t);
+  oscGain.gain.exponentialRampToValueAtTime(peak, t + 0.005);
+  oscGain.gain.exponentialRampToValueAtTime(0.0001, t + decay);
+  osc.connect(oscGain).connect(ctx.destination);
+  osc.start(t);
+  osc.stop(t + decay + 0.05);
+
+  // 2) Noise transient — the percussive "click" of the tick
+  const noiseDur = 0.25;
+  const buffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * noiseDur), ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < data.length; i++) {
+    data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / data.length, 2);
+  }
+  const noise = ctx.createBufferSource();
+  noise.buffer = buffer;
+  const bp = ctx.createBiquadFilter();
+  bp.type = 'bandpass';
+  bp.frequency.value = isHard ? 1800 : 1200;
+  bp.Q.value = 0.8;
+  const noiseGain = ctx.createGain();
+  noiseGain.gain.setValueAtTime(0.0001, t);
+  noiseGain.gain.exponentialRampToValueAtTime(isHard ? 0.7 : 0.35, t + 0.003);
+  noiseGain.gain.exponentialRampToValueAtTime(0.0001, t + (isHard ? 0.55 : 0.3));
+  noise.connect(bp).connect(noiseGain).connect(ctx.destination);
+  noise.start(t);
+  noise.stop(t + noiseDur);
+}
+
+/**
+ * Pre-schedule every audio cue for the remaining workout time, starting from
+ * audioStartTime (an AudioContext time). This way countdown beeps and minute
+ * transitions fire on-schedule even if the JS thread is throttled (PWA backgrounded).
+ *
+ * Returns the source nodes scheduled, so they can be canceled on pause/cancel.
+ */
+function scheduleAllCues(
+  ctx: AudioContext,
+  audioStartTime: number,
+  elapsedSec: number
+): void {
+  // For each minute boundary 1..10, schedule:
+  // - soft ticks at -3s, -2s, -1s (countdown)
+  // - hard thump at the boundary itself
+  for (let m = 1; m <= 10; m++) {
+    const boundary = m * SET_INTERVAL_SEC;
+    if (boundary <= elapsedSec) continue;
+    const boundaryAudioT = audioStartTime + (boundary - elapsedSec);
+    for (let s = 3; s >= 1; s--) {
+      if (boundary - s > elapsedSec) {
+        scheduleHeavyTick(ctx, audioStartTime + (boundary - s - elapsedSec), 'soft');
+      }
+    }
+    scheduleHeavyTick(ctx, boundaryAudioT, 'hard');
   }
 }
 
@@ -33,76 +108,86 @@ export default function EmomTimer({ exerciseId, phase, prescription, onComplete,
   const [timeLeft, setTimeLeft] = useState(TOTAL_TIME);
   const [isRunning, setIsRunning] = useState(false);
   const [isFinished, setIsFinished] = useState(false);
-  const [repInput, setRepInput] = useState('');
-  const [waitingForInput, setWaitingForInput] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const audioRef = useRef<AudioContext | null>(null);
+
+  // Timestamp-based clock — survives JS throttling
+  const elapsedBeforePauseRef = useRef(0);
+  const wallStartRef = useRef<number | null>(null);
+  const rafRef = useRef<number | null>(null);
+
+  // Audio
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  // Wake lock
+  const wakeLockRef = useRef<any>(null);
 
   const getAudioCtx = useCallback(() => {
-    if (!audioRef.current) audioRef.current = new AudioContext();
-    return audioRef.current;
+    if (!audioCtxRef.current) {
+      const AC = (window as any).AudioContext || (window as any).webkitAudioContext;
+      audioCtxRef.current = new AC();
+    }
+    return audioCtxRef.current!;
   }, []);
 
-  const playBeep = useCallback((freq = 880, duration = 0.15, vol = 0.3) => {
+  const requestWakeLock = useCallback(async () => {
     try {
-      const ctx = getAudioCtx();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.frequency.value = freq;
-      osc.type = 'square';
-      gain.gain.setValueAtTime(vol, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
-      osc.start();
-      osc.stop(ctx.currentTime + duration);
+      if ('wakeLock' in navigator) {
+        wakeLockRef.current = await (navigator as any).wakeLock.request('screen');
+      }
     } catch {}
-  }, [getAudioCtx]);
+  }, []);
 
-  const playCountdownBeep = useCallback((secondsLeft: number) => {
-    if (secondsLeft > 0) {
-      playBeep(660, 0.1, 0.2);
-      triggerHaptic('tick');
-    } else {
-      // New minute — big beep
-      playBeep(1100, 0.25, 0.4);
-      triggerHaptic('warning');
-    }
-  }, [playBeep]);
+  const releaseWakeLock = useCallback(() => {
+    try { wakeLockRef.current?.release?.(); } catch {}
+    wakeLockRef.current = null;
+  }, []);
 
-  // Timer logic
+  // Re-acquire wake lock on visibility return
   useEffect(() => {
-    if (!isRunning || isFinished) return;
+    const onVis = () => {
+      if (document.visibilityState === 'visible' && isRunning) {
+        requestWakeLock();
+      }
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
+  }, [isRunning, requestWakeLock]);
 
-    timerRef.current = setInterval(() => {
-      setTimeLeft(prev => {
-        const next = prev - 1;
-        if (next <= 0) {
-          setIsRunning(false);
-          setIsFinished(true);
-          playBeep(1320, 0.5, 0.5);
-          triggerHaptic('start');
-          return 0;
-        }
-        const secInMinute = next % SET_INTERVAL_SEC;
+  // Timestamp-driven tick loop (rAF when visible, setInterval fallback always running)
+  useEffect(() => {
+    if (!isRunning || isFinished || wallStartRef.current === null) return;
 
-        // Last 5 seconds countdown
-        if (secInMinute <= 5 && secInMinute > 0) {
-          playCountdownBeep(secInMinute);
-        }
+    const update = () => {
+      const elapsed = elapsedBeforePauseRef.current + (Date.now() - wallStartRef.current!) / 1000;
+      const remaining = Math.max(0, TOTAL_TIME - elapsed);
+      const remainingInt = Math.ceil(remaining);
+      setTimeLeft(remainingInt);
+      setCurrentSet(Math.min(Math.floor(elapsed / SET_INTERVAL_SEC), 9));
 
-        // New minute boundary
-        if (secInMinute === 0 && next < TOTAL_TIME) {
-          playCountdownBeep(0);
-          setCurrentSet(prev => Math.min(prev + 1, 9));
-          setWaitingForInput(true);
-        }
-        return next;
-      });
-    }, 1000);
+      if (remaining <= 0) {
+        setIsRunning(false);
+        setIsFinished(true);
+        releaseWakeLock();
+        return;
+      }
+      rafRef.current = requestAnimationFrame(update);
+    };
 
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [isRunning, isFinished, playBeep, playCountdownBeep]);
+    rafRef.current = requestAnimationFrame(update);
+    // Backup interval in case rAF is paused (tab hidden)
+    const backup = setInterval(update, 500);
+
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      clearInterval(backup);
+    };
+  }, [isRunning, isFinished, releaseWakeLock]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      releaseWakeLock();
+      try { audioCtxRef.current?.close(); } catch {}
+    };
+  }, [releaseWakeLock]);
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -111,29 +196,51 @@ export default function EmomTimer({ exerciseId, phase, prescription, onComplete,
   };
 
   const secondsInSet = timeLeft % SET_INTERVAL_SEC || (timeLeft === TOTAL_TIME ? 60 : 0);
-  const isCountdown = isRunning && secondsInSet <= 5 && secondsInSet > 0;
+  const isCountdown = isRunning && secondsInSet <= 3 && secondsInSet > 0;
 
   const logReps = useCallback((reps: number) => {
-    setSets(prev => prev.map((s, i) =>
-      i === currentSet ? { ...s, actualReps: reps } : s
-    ));
-    setRepInput('');
-    setWaitingForInput(false);
+    setSets(prev => prev.map((s, i) => i === currentSet ? { ...s, actualReps: reps } : s));
     triggerHaptic('tick');
   }, [currentSet]);
 
-  const quickLog = useCallback((reps: number) => {
-    logReps(reps);
-  }, [logReps]);
-
-  const handleStart = () => {
+  const handleStart = async () => {
+    const ctx = getAudioCtx();
+    if (ctx.state === 'suspended') await ctx.resume();
+    // Schedule everything from time zero
+    scheduleAllCues(ctx, ctx.currentTime + 0.05, 0);
+    elapsedBeforePauseRef.current = 0;
+    wallStartRef.current = Date.now();
     setIsRunning(true);
-    setWaitingForInput(true);
-    playBeep(1100, 0.25, 0.4);
     triggerHaptic('start');
+    requestWakeLock();
+  };
+
+  const handlePause = () => {
+    if (wallStartRef.current !== null) {
+      elapsedBeforePauseRef.current += (Date.now() - wallStartRef.current) / 1000;
+      wallStartRef.current = null;
+    }
+    setIsRunning(false);
+    // Suspend audio context to cancel all scheduled cues; we'll reschedule remaining on resume
+    try { audioCtxRef.current?.suspend(); } catch {}
+    releaseWakeLock();
+  };
+
+  const handleResume = async () => {
+    const ctx = getAudioCtx();
+    // Close and re-create to fully cancel previously scheduled events
+    try { await ctx.close(); } catch {}
+    audioCtxRef.current = null;
+    const newCtx = getAudioCtx();
+    if (newCtx.state === 'suspended') await newCtx.resume();
+    scheduleAllCues(newCtx, newCtx.currentTime + 0.05, elapsedBeforePauseRef.current);
+    wallStartRef.current = Date.now();
+    setIsRunning(true);
+    requestWakeLock();
   };
 
   const handleFinish = () => {
+    releaseWakeLock();
     const totalReps = sets.reduce((sum, s) => sum + (s.actualReps || 0), 0);
     const session: WorkoutSession = {
       id: Date.now().toString(),
@@ -148,9 +255,7 @@ export default function EmomTimer({ exerciseId, phase, prescription, onComplete,
 
   const phaseLabel: Record<WorkoutPhase, string> = {
     baseline: '🎯 BASELINE — Go to failure each set (max 12)',
-    evening_out: '⚖️ EVENING OUT — Hit your targets consistently',
-    amrap: '🔥 AMRAP — Sets 1-9 normal, Set 10 GO ALL OUT',
-    front_load: '📈 FRONT LOAD — New targets from your surplus',
+    standard: '🔥 EMOM — Sets 1-9 hit targets, Set 10 GO ALL OUT',
     completed: '🏆 MASTERED',
   };
 
@@ -175,13 +280,12 @@ export default function EmomTimer({ exerciseId, phase, prescription, onComplete,
             {formatTime(timeLeft)}
           </div>
 
-          {/* Countdown visual */}
           {isCountdown && (
             <div className="mt-3 flex justify-center gap-2">
-              {[5, 4, 3, 2, 1].map(n => (
+              {[3, 2, 1].map(n => (
                 <div
                   key={n}
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 ${
+                  className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 ${
                     secondsInSet <= n
                       ? 'bg-primary text-primary-foreground scale-110'
                       : 'bg-secondary text-muted-foreground'
@@ -197,15 +301,13 @@ export default function EmomTimer({ exerciseId, phase, prescription, onComplete,
             Set {Math.min(currentSet + 1, 10)} of 10
           </div>
 
-          {/* Progress bar */}
           <div className="mt-4 h-2 bg-secondary rounded-full overflow-hidden">
             <div
-              className={`h-full rounded-full transition-all duration-1000 ease-linear ${isCountdown ? 'bg-primary animate-pulse' : 'bg-primary'}`}
+              className={`h-full rounded-full transition-all duration-500 ease-linear ${isCountdown ? 'bg-primary animate-pulse' : 'bg-primary'}`}
               style={{ width: `${((TOTAL_TIME - timeLeft) / TOTAL_TIME) * 100}%` }}
             />
           </div>
 
-          {/* Timer controls */}
           <div className="mt-4 flex justify-center gap-3">
             {!isRunning && !isFinished && timeLeft === TOTAL_TIME && (
               <Button onClick={handleStart} className="bg-primary text-primary-foreground gap-2 text-lg px-8 py-6">
@@ -213,21 +315,28 @@ export default function EmomTimer({ exerciseId, phase, prescription, onComplete,
               </Button>
             )}
             {isRunning && (
-              <Button onClick={() => setIsRunning(false)} variant="outline" className="gap-2">
+              <Button onClick={handlePause} variant="outline" className="gap-2">
                 <Pause className="w-4 h-4" /> Pause
               </Button>
             )}
             {!isRunning && !isFinished && timeLeft < TOTAL_TIME && (
-              <Button onClick={() => setIsRunning(true)} className="bg-primary text-primary-foreground gap-2">
+              <Button onClick={handleResume} className="bg-primary text-primary-foreground gap-2">
                 <Play className="w-4 h-4" /> Resume
               </Button>
             )}
             {!isRunning && timeLeft < TOTAL_TIME && (
-              <Button onClick={onCancel} variant="ghost" className="gap-2 text-muted-foreground">
+              <Button onClick={() => { releaseWakeLock(); onCancel(); }} variant="ghost" className="gap-2 text-muted-foreground">
                 <RotateCcw className="w-4 h-4" /> Cancel
               </Button>
             )}
           </div>
+
+          {/* Background-accuracy hint */}
+          {isRunning && (
+            <p className="mt-3 text-[10px] text-muted-foreground/70">
+              Timer stays accurate in background. Keep volume up — heavy thump on every minute.
+            </p>
+          )}
         </CardContent>
       </Card>
 
@@ -259,7 +368,7 @@ export default function EmomTimer({ exerciseId, phase, prescription, onComplete,
                         ? 'opacity-40'
                         : ''
                   }`}
-                  onClick={() => quickLog(n)}
+                  onClick={() => logReps(n)}
                   disabled={n > 12 && !sets[currentSet]?.isAmrap && phase !== 'baseline'}
                 >
                   {n}
@@ -269,7 +378,7 @@ export default function EmomTimer({ exerciseId, phase, prescription, onComplete,
                 variant="outline"
                 size="sm"
                 className="w-10 h-10 text-sm font-bold text-destructive"
-                onClick={() => quickLog(0)}
+                onClick={() => logReps(0)}
               >
                 0
               </Button>
@@ -305,7 +414,6 @@ export default function EmomTimer({ exerciseId, phase, prescription, onComplete,
         ))}
       </div>
 
-      {/* Total & Finish */}
       {(isRunning || isFinished) && (
         <div className="text-center space-y-3">
           <div className="flex items-center justify-center gap-2 text-muted-foreground">

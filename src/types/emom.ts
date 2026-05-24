@@ -5,6 +5,7 @@ export type PushVariation =
   | 'diamond_pushup'
   | 'wide_pushup'
   | 'decline_pushup'
+  | 'dips'
   | 'pike_pushup'
   | 'archer_pushup'
   | 'pseudo_planche_pushup'
@@ -39,11 +40,9 @@ export interface ExerciseInfo {
 }
 
 export type WorkoutPhase =
-  | 'baseline'      // Phase 1: Go to failure each set, find capacity
-  | 'evening_out'   // Phase 2: Distribute reps evenly
-  | 'amrap'         // Phase 3: Sets 1-9 at standard, set 10 AMRAP
-  | 'front_load'    // Phase 4: Add surplus to front, re-distribute
-  | 'completed';    // Hit 12x10 — mastered
+  | 'baseline'   // First-ever workout: go to failure each set (max 12) to find capacity
+  | 'standard'   // Every subsequent workout: sets 1-9 at prescribed reps, set 10 AMRAP
+  | 'completed'; // Hit 12x10 — mastered
 
 export interface WorkoutSet {
   setNumber: number; // 1-10

@@ -132,10 +132,8 @@ export default function EmomDashboard() {
   // --- EXERCISE DETAIL VIEW ---
   if (view === 'exercise' && selectedExercise && selectedProgress && selectedInfo) {
     const phaseDescriptions: Record<string, string> = {
-      baseline: 'Find your capacity. Go to failure each set (max 12 reps). The timer will beep every minute.',
-      evening_out: 'Hit your evened-out targets consistently across all 10 sets.',
-      amrap: 'Do your first 9 sets at target, then GO ALL OUT on set 10. Push past 12 if you can!',
-      front_load: 'Your surplus from the AMRAP has been front-loaded. Hit these new targets.',
+      baseline: 'Find your capacity. Go to failure each set (max 12 reps). The timer beeps every minute.',
+      standard: 'Hit your targets on sets 1-9, then GO ALL OUT on set 10 (AMRAP). Push past 12 if you can!',
       completed: 'You\'ve mastered this exercise! 12 reps across all 10 sets. 🏆',
     };
 
@@ -172,12 +170,12 @@ export default function EmomDashboard() {
                     <div
                       key={i}
                       className={`text-center rounded py-1 text-xs font-mono font-bold ${
-                        selectedProgress.currentPhase === 'amrap' && i === 9
+                        selectedProgress.currentPhase === 'standard' && i === 9
                           ? 'bg-primary/20 text-primary border border-primary/30'
                           : 'bg-secondary text-foreground'
                       }`}
                     >
-                      {selectedProgress.currentPhase === 'amrap' && i === 9 ? '🔥' : reps}
+                      {selectedProgress.currentPhase === 'standard' && i === 9 ? '🔥' : reps}
                     </div>
                   ))}
                 </div>
