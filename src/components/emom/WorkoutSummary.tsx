@@ -81,7 +81,7 @@ export default function WorkoutSummary({
           </div>
           <div className="mt-2 flex flex-wrap justify-center gap-2 text-xs text-muted-foreground">
             <span className="bg-secondary px-2 py-0.5 rounded">Workout: +{XP_REWARDS.COMPLETE_WORKOUT}</span>
-            {session.phase === 'amrap' && (
+            {session.sets[9]?.isAmrap && (
               <span className="bg-secondary px-2 py-0.5 rounded">AMRAP Bonus</span>
             )}
             {isMastery && (

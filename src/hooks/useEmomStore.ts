@@ -39,10 +39,24 @@ function createDefaultProfile(): UserProfile {
   };
 }
 
+function migratePhase(p: string): 'baseline' | 'standard' | 'completed' {
+  if (p === 'baseline' || p === 'standard' || p === 'completed') return p;
+  // Old phases (evening_out, amrap, front_load) all collapse to standard
+  return 'standard';
+}
+
 function loadProfile(): UserProfile {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) return JSON.parse(saved);
+    if (saved) {
+      const parsed = JSON.parse(saved) as UserProfile;
+      // Migrate legacy phase names
+      for (const key of Object.keys(parsed.exerciseProgress || {})) {
+        const ep = parsed.exerciseProgress[key];
+        ep.currentPhase = migratePhase(ep.currentPhase as unknown as string);
+      }
+      return parsed;
+    }
   } catch {}
   return createDefaultProfile();
 }
