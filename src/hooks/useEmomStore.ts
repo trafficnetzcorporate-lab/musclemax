@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { UserProfile, ExerciseProgress, WorkoutSession, ExerciseVariation, WorkoutPhase, XP_REWARDS, LEVEL_THRESHOLDS } from '@/types/emom';
-import { getDefaultUnlocked } from '@/lib/exercises';
+import { getDefaultUnlocked, getAncestors, getDependents } from '@/lib/exercises';
 import { processWorkout, calculateWorkoutXp, getBaselinePrescription } from '@/lib/emom-algorithm';
 
 const STORAGE_KEY = 'emom_profile';
@@ -10,6 +10,20 @@ function getLevel(xp: number): number {
     if (xp >= LEVEL_THRESHOLDS[i]) return i + 1;
   }
   return 1;
+}
+
+/** A fresh, unlocked-but-untrained progress entry (available for rep logging). */
+function freshProgress(id: ExerciseVariation): ExerciseProgress {
+  return {
+    exerciseId: id,
+    currentPhase: 'baseline',
+    currentPrescription: getBaselinePrescription(),
+    totalWorkouts: 0,
+    bestTotalReps: 0,
+    history: [],
+    mastered: false,
+    xp: 0,
+  };
 }
 
 function createDefaultProfile(): UserProfile {
@@ -57,7 +71,7 @@ function loadProfile(): UserProfile {
       }
       return parsed;
     }
-  } catch {}
+  } catch { /* ignore malformed storage */ }
   return createDefaultProfile();
 }
 
@@ -147,6 +161,65 @@ export function useEmomStore() {
     });
   }, []);
 
+  /**
+   * Apply a won Challenge (one all-out session of 12 reps × 10 sets).
+   * Effects:
+   *  - the challenged exercise is marked MASTERED, with the winning session logged,
+   *  - every ancestor (easier prerequisite) is UNLOCKED for rep logging — but NOT
+   *    auto-mastered and its reps are NOT filled in,
+   *  - the next tier (direct dependents) unlocks exactly as a normal mastery would.
+   * Anything further out stays locked, per the existing tier rules.
+   */
+  const applyChallengeWin = useCallback((session: WorkoutSession) => {
+    setProfile(prev => {
+      const id = session.exerciseId;
+      const unlocked = new Set(prev.unlockedExercises);
+      const progressMap: Record<string, ExerciseProgress> = { ...prev.exerciseProgress };
+
+      // Unlock ancestors for logging (don't master, don't fill reps).
+      for (const anc of getAncestors(id)) {
+        if (!unlocked.has(anc.id)) {
+          unlocked.add(anc.id);
+          progressMap[anc.id] = freshProgress(anc.id);
+        }
+      }
+
+      // Master the challenged exercise itself.
+      const existing = progressMap[id];
+      const totalReps = session.sets.reduce((s, set) => s + (set.actualReps || 0), 0);
+      const challengeXp = XP_REWARDS.COMPLETE_WORKOUT + XP_REWARDS.MASTER_EXERCISE;
+      unlocked.add(id);
+      progressMap[id] = {
+        exerciseId: id,
+        currentPhase: 'completed',
+        currentPrescription: Array(10).fill(12),
+        totalWorkouts: (existing?.totalWorkouts || 0) + 1,
+        bestTotalReps: Math.max(existing?.bestTotalReps || 0, totalReps),
+        history: [...(existing?.history || []), session],
+        mastered: true,
+        masteredDate: new Date().toISOString(),
+        xp: (existing?.xp || 0) + challengeXp,
+      };
+
+      // Unlock the next tier (same as a normal mastery).
+      for (const dep of getDependents(id)) {
+        if (!unlocked.has(dep.id)) {
+          unlocked.add(dep.id);
+          progressMap[dep.id] = freshProgress(dep.id);
+        }
+      }
+
+      const newTotalXp = prev.totalXp + challengeXp;
+      return {
+        ...prev,
+        totalXp: newTotalXp,
+        level: getLevel(newTotalXp),
+        unlockedExercises: Array.from(unlocked),
+        exerciseProgress: progressMap,
+      };
+    });
+  }, []);
+
   const resetProfile = useCallback(() => {
     setProfile(createDefaultProfile());
   }, []);
@@ -158,6 +231,7 @@ export function useEmomStore() {
     startExercise: useCallback(() => {}, []),
     completeWorkout,
     unlockExercise,
+    applyChallengeWin,
     resetProfile,
   };
 }

@@ -3,9 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useEmomStore } from '@/hooks/useEmomStore';
-import { getExerciseById, ALL_EXERCISES } from '@/lib/exercises';
-import { ExerciseVariation, LEVEL_THRESHOLDS, WorkoutSession } from '@/types/emom';
+import { getExerciseById, ALL_EXERCISES, getDependents } from '@/lib/exercises';
+import { ExerciseVariation, LEVEL_THRESHOLDS, WorkoutSession, XP_REWARDS } from '@/types/emom';
 import { processWorkout, calculateWorkoutXp } from '@/lib/emom-algorithm';
+import { toast } from 'sonner';
 import EmomTimer from './EmomTimer';
 import SkillTree from './SkillTree';
 import WorkoutHistory from './WorkoutHistory';
@@ -15,7 +16,7 @@ import WeeklyProgressChart from './WeeklyProgressChart';
 import { Link } from 'react-router-dom';
 import {
   Flame, Trophy, Zap, Target, TrendingUp, Dumbbell,
-  ArrowLeft, Star, Shield, ChevronRight, Calculator
+  ArrowLeft, Star, Shield, ChevronRight, Calculator, Swords, Lock
 } from 'lucide-react';
 
 type View = 'dashboard' | 'exercise' | 'workout' | 'summary';
@@ -30,12 +31,13 @@ interface SummaryData {
 }
 
 export default function EmomDashboard() {
-  const { profile, getExerciseProgress, completeWorkout, unlockExercise } = useEmomStore();
-  
+  const { profile, getExerciseProgress, completeWorkout, unlockExercise, applyChallengeWin } = useEmomStore();
+
   const [view, setView] = useState<View>('dashboard');
   const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'push' | 'pull' | 'legs'>('push');
   const [summaryData, setSummaryData] = useState<SummaryData | null>(null);
+  const [challengeMode, setChallengeMode] = useState(false);
 
   const nextLevelXp = LEVEL_THRESHOLDS[Math.min(profile.level, LEVEL_THRESHOLDS.length - 1)] || 99999;
   const prevLevelXp = LEVEL_THRESHOLDS[Math.max(profile.level - 2, 0)] || 0;
@@ -51,7 +53,47 @@ export default function EmomDashboard() {
 
   const handleStartWorkout = () => {
     if (!selectedExercise) return;
+    setChallengeMode(false);
     setView('workout');
+  };
+
+  const handleStartChallenge = () => {
+    if (!selectedExercise) return;
+    setChallengeMode(true);
+    setView('workout');
+  };
+
+  const handleCompleteChallenge = (session: WorkoutSession) => {
+    const won = session.sets.length === 10 && session.sets.every(s => (s.actualReps ?? 0) >= 12);
+    setChallengeMode(false);
+
+    if (!won) {
+      const hit = session.sets.filter(s => (s.actualReps ?? 0) >= 12).length;
+      toast.error('Challenge not cleared', {
+        description: `You need 12 reps on all 10 sets — you hit 12 on ${hit}. Nothing unlocked. Try again when you're ready.`,
+      });
+      setView('exercise');
+      return;
+    }
+
+    const info = getExerciseById(session.exerciseId);
+    const unlockedNames = getDependents(session.exerciseId).map(e => e.name);
+    applyChallengeWin(session);
+
+    setSummaryData({
+      session,
+      previousSession: null,
+      xpEarned: XP_REWARDS.COMPLETE_WORKOUT + XP_REWARDS.MASTER_EXERCISE,
+      isMastery: true,
+      isPR: true,
+      nextPrescription: Array(10).fill(12),
+    });
+    toast.success(`${info?.name} challenge cleared!`, {
+      description: unlockedNames.length
+        ? `Mastered. Unlocked: ${unlockedNames.join(', ')}. Earlier tiers are open for logging.`
+        : 'Mastered. Earlier tiers are open for logging.',
+    });
+    setView('summary');
   };
 
   const handleCompleteWorkout = (session: WorkoutSession) => {
@@ -90,6 +132,7 @@ export default function EmomDashboard() {
 
   const selectedProgress = selectedExercise ? getExerciseProgress(selectedExercise) : null;
   const selectedInfo = selectedExercise ? getExerciseById(selectedExercise) : null;
+  const selectedUnlocked = selectedExercise ? profile.unlockedExercises.includes(selectedExercise as ExerciseVariation) : false;
 
   // --- SUMMARY VIEW ---
   if (view === 'summary' && summaryData) {
@@ -111,8 +154,13 @@ export default function EmomDashboard() {
     );
   }
 
-  // --- WORKOUT VIEW ---
-  if (view === 'workout' && selectedExercise && selectedProgress) {
+  // --- WORKOUT VIEW (also handles Challenge, including on locked exercises) ---
+  if (view === 'workout' && selectedExercise && selectedInfo) {
+    // A challenge is always an all-out 12×10 attempt, regardless of saved phase.
+    const timerPhase = challengeMode ? 'baseline' : (selectedProgress?.currentPhase ?? 'baseline');
+    const timerPrescription = challengeMode
+      ? Array(10).fill(12)
+      : (selectedProgress?.currentPrescription ?? Array(10).fill(12));
     return (
       <div className="min-h-screen bg-background p-4 max-w-lg mx-auto">
         <Button variant="ghost" size="sm" onClick={() => setView('exercise')} className="mb-4 text-muted-foreground">
@@ -120,11 +168,52 @@ export default function EmomDashboard() {
         </Button>
         <EmomTimer
           exerciseId={selectedExercise as ExerciseVariation}
-          phase={selectedProgress.currentPhase}
-          prescription={selectedProgress.currentPrescription}
-          onComplete={handleCompleteWorkout}
+          phase={timerPhase}
+          prescription={timerPrescription}
+          isChallenge={challengeMode}
+          onComplete={challengeMode ? handleCompleteChallenge : handleCompleteWorkout}
           onCancel={() => setView('exercise')}
         />
+      </div>
+    );
+  }
+
+  // --- LOCKED EXERCISE DETAIL VIEW (challenge-to-unlock) ---
+  if (view === 'exercise' && selectedExercise && selectedInfo && !selectedUnlocked) {
+    const prereq = selectedInfo.prerequisiteId ? getExerciseById(selectedInfo.prerequisiteId) : null;
+    return (
+      <div className="min-h-screen bg-background p-4 max-w-lg mx-auto">
+        <Button variant="ghost" size="sm" onClick={() => setView('dashboard')} className="mb-4 text-muted-foreground">
+          <ArrowLeft className="w-4 h-4 mr-1" /> Back
+        </Button>
+
+        <div className="text-center mb-6">
+          <span className="text-5xl">{selectedInfo.icon}</span>
+          <div className="flex items-center justify-center gap-2 mt-2">
+            <Lock className="w-4 h-4 text-muted-foreground" />
+            <h2 className="text-2xl font-bold text-foreground">{selectedInfo.name}</h2>
+          </div>
+          <p className="text-sm text-muted-foreground mt-1">{selectedInfo.description}</p>
+        </div>
+
+        <Card className="border-primary/40 mb-4">
+          <CardContent className="p-4 text-center">
+            <Swords className="w-10 h-10 text-primary mx-auto mb-2" />
+            <p className="text-sm font-semibold text-foreground mb-1">Challenge to unlock</p>
+            <p className="text-xs text-muted-foreground mb-3">
+              Normally unlocked by mastering {prereq ? prereq.name : 'its prerequisite'}. Skip the grind:
+              hit <span className="text-primary font-bold">12 reps on all 10 sets</span> in one session to
+              master it now. Win and you also open every earlier tier for rep-logging plus whatever this move
+              unlocks next.
+            </p>
+            <Button onClick={handleStartChallenge} className="w-full bg-primary text-primary-foreground gap-2">
+              <Swords className="w-4 h-4" /> Start Challenge
+            </Button>
+            <p className="mt-2 text-[10px] text-muted-foreground/70">
+              Miss any set and nothing unlocks — you can retry anytime.
+            </p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -182,6 +271,9 @@ export default function EmomDashboard() {
                 <Button onClick={handleStartWorkout} className="w-full bg-primary text-primary-foreground gap-2">
                   <Flame className="w-4 h-4" /> Start Workout
                 </Button>
+                <Button onClick={handleStartChallenge} variant="outline" className="w-full mt-2 gap-2 border-primary/40 text-primary">
+                  <Swords className="w-4 h-4" /> Challenge: master in one session (12×10)
+                </Button>
               </>
             )}
             {selectedProgress.currentPhase === 'completed' && (
@@ -228,8 +320,8 @@ export default function EmomDashboard() {
         <div className="max-w-lg mx-auto px-4 py-6">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-2xl font-bold text-foreground tracking-tight">EMOM</h1>
-              <p className="text-xs text-muted-foreground">Progressive Overload Engine</p>
+              <h1 className="text-2xl font-bold text-foreground tracking-tight">Golden Ratio</h1>
+              <p className="text-xs text-muted-foreground">EMOM · Progressive Overload Engine</p>
             </div>
             <Link to="/calculator" className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors">
               <Calculator className="w-3.5 h-3.5" /> Calc

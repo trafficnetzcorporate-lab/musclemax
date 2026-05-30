@@ -222,3 +222,26 @@ export function getExerciseById(id: string): ExerciseInfo | undefined {
 export function getDefaultUnlocked(): string[] {
   return ['regular_pushup', 'chin_up', 'neutral_grip_pullup'];
 }
+
+/**
+ * Walk the prerequisite chain upward from an exercise to its tier-1 root.
+ * Returns every ancestor (not including the exercise itself), nearest first.
+ * Used by the Challenge feature: clearing a hard move proves you can do every
+ * easier move leading up to it, so those get unlocked for rep-logging.
+ */
+export function getAncestors(id: string): ExerciseInfo[] {
+  const chain: ExerciseInfo[] = [];
+  let current = getExerciseById(id)?.prerequisiteId;
+  while (current) {
+    const info = getExerciseById(current);
+    if (!info) break;
+    chain.push(info);
+    current = info.prerequisiteId;
+  }
+  return chain;
+}
+
+/** Exercises that list `id` as their prerequisite (the next tier it unlocks). */
+export function getDependents(id: string): ExerciseInfo[] {
+  return ALL_EXERCISES.filter(e => e.prerequisiteId === id);
+}

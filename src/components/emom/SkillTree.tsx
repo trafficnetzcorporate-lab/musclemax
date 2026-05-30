@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { ExerciseInfo } from '@/types/emom';
 import { PUSH_EXERCISES, PULL_EXERCISES } from '@/lib/exercises';
 import { ExerciseProgress } from '@/types/emom';
-import { Lock, CheckCircle2, ChevronRight, Trophy } from 'lucide-react';
+import { Lock, ChevronRight, Trophy, Swords } from 'lucide-react';
 
 interface SkillTreeProps {
   category: 'push' | 'pull';
@@ -42,15 +42,14 @@ export default function SkillTree({ category, unlockedExercises, exerciseProgres
                 return (
                   <button
                     key={ex.id}
-                    onClick={() => isUnlocked && onSelectExercise(ex.id)}
-                    disabled={!isUnlocked}
+                    onClick={() => onSelectExercise(ex.id)}
                     className={`
                       relative rounded-lg border p-3 text-left transition-all
-                      ${isMastered 
-                        ? 'border-primary bg-primary/10 shadow-glow' 
-                        : isUnlocked 
-                          ? 'border-border bg-card hover:border-primary/50 hover:bg-secondary/50 cursor-pointer' 
-                          : 'border-border/50 bg-card/50 opacity-50 cursor-not-allowed'
+                      ${isMastered
+                        ? 'border-primary bg-primary/10 shadow-glow'
+                        : isUnlocked
+                          ? 'border-border bg-card hover:border-primary/50 hover:bg-secondary/50 cursor-pointer'
+                          : 'border-border/50 bg-card/60 opacity-70 hover:opacity-100 hover:border-primary/40 cursor-pointer'
                       }
                     `}
                   >
@@ -63,6 +62,11 @@ export default function SkillTree({ category, unlockedExercises, exerciseProgres
                           {!isUnlocked && <Lock className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />}
                         </div>
                         <p className="text-xs text-muted-foreground line-clamp-1">{ex.description}</p>
+                        {!isUnlocked && (
+                          <div className="mt-1 inline-flex items-center gap-1 text-[10px] font-semibold text-primary/90">
+                            <Swords className="w-3 h-3" /> Challenge to unlock
+                          </div>
+                        )}
                         {isUnlocked && progress && (
                           <div className="mt-1.5">
                             <div className="h-1 bg-secondary rounded-full overflow-hidden">
