@@ -40,8 +40,8 @@ export interface EmomAudioConfig {
   countdownLead: number;   // e.g. 5 — how many seconds of ticks before each minute
 }
 
-const LOOKAHEAD = 0.3;        // schedule cues up to 300ms ahead
-const SCHEDULE_INTERVAL = 120; // ms between scheduler wakeups
+const LOOKAHEAD = 0.75;        // schedule cues up to 750ms ahead (throttle-tolerant)
+const SCHEDULE_INTERVAL = 100; // ms between scheduler wakeups
 
 /** Build the fixed list of audio cues for one workout. */
 export function buildCues({ totalTime, setInterval, countdownLead }: EmomAudioConfig): Cue[] {
@@ -154,10 +154,25 @@ export class EmomAudioEngine {
     compressor.connect(master);
     master.connect(ctx.destination);
 
-    // Background hack: also pipe the master bus into an <audio> element.
+    // Continuous, inaudible keep-alive tone wired straight to the speakers.
+    // This is the critical fix for "only the Start beep plays": mobile browsers
+    // auto-suspend an AudioContext they think is idle, which freezes currentTime
+    // and makes every *scheduled* beep silently queue forever. A constant (–80dB,
+    // sub-audible) source keeps the context "running" so scheduled cues fire.
+    const ka = ctx.createOscillator();
+    const kaGain = ctx.createGain();
+    ka.frequency.value = 55;
+    kaGain.gain.value = 0.00012;
+    ka.connect(kaGain).connect(ctx.destination);
+    ka.start();
+    this.keepAlive = ka;
+
+    // Background hack: also pipe the master bus into an <audio> element so the
+    // OS sees an active media session (best-effort background continuation).
     try {
       const mediaDest = ctx.createMediaStreamDestination();
       master.connect(mediaDest);
+      kaGain.connect(mediaDest); // keep the stream non-silent too
       const el = new Audio();
       el.srcObject = mediaDest.stream;
       el.loop = true;
@@ -166,15 +181,6 @@ export class EmomAudioEngine {
       el.setAttribute('playsinline', '');
       this.audioEl = el;
       this.mediaDest = mediaDest;
-
-      // Near-silent keep-alive so the stream is never "fully silent" and culled.
-      const ka = ctx.createOscillator();
-      const kaGain = ctx.createGain();
-      ka.frequency.value = 60;
-      kaGain.gain.value = 0.0002;
-      ka.connect(kaGain).connect(mediaDest);
-      ka.start();
-      this.keepAlive = ka;
     } catch {
       // MediaStream route unsupported — fall back to plain Web Audio output.
     }
@@ -207,6 +213,11 @@ export class EmomAudioEngine {
 
   private tick() {
     if (!this.ctx || !this.getElapsed) return;
+    // The phone may have quietly suspended us; force it back to running so
+    // currentTime keeps advancing and scheduled cues actually fire.
+    if (this.ctx.state !== 'running') {
+      this.ctx.resume().catch(() => { /* noop */ });
+    }
     const elapsed = this.getElapsed();
     const now = this.ctx.currentTime;
     for (let i = 0; i < this.cues.length; i++) {

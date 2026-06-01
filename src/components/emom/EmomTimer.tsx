@@ -197,7 +197,7 @@ export default function EmomTimer({ exerciseId, phase, prescription, onComplete,
     completed: '🏆 MASTERED',
   };
   const bannerLabel = isChallenge
-    ? '⚔️ CHALLENGE — Hit 12 reps on ALL 10 sets to win'
+    ? '⚔️ CHALLENGE — 60+ reps unlocks · 12×10 masters'
     : phaseLabel[phase];
 
   const allSetsLogged = sets.every(s => s.actualReps !== null);

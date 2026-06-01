@@ -220,6 +220,38 @@ export function useEmomStore() {
     });
   }, []);
 
+  /**
+   * Apply a *partial* Challenge result (≥ 60 total reps but not a full 12×10).
+   * The athlete proved they belong at this exercise, so:
+   *  - the challenged exercise itself is UNLOCKED for normal rep-logging (not mastered),
+   *  - every earlier prerequisite tier is UNLOCKED for logging too,
+   *  - the next tier stays LOCKED — they didn't max it out.
+   * No reps are auto-filled; this only opens things up to be trained.
+   */
+  const applyChallengePartial = useCallback((exerciseId: ExerciseVariation) => {
+    setProfile(prev => {
+      const unlocked = new Set(prev.unlockedExercises);
+      const progressMap: Record<string, ExerciseProgress> = { ...prev.exerciseProgress };
+
+      for (const anc of getAncestors(exerciseId)) {
+        if (!unlocked.has(anc.id)) {
+          unlocked.add(anc.id);
+          progressMap[anc.id] = freshProgress(anc.id);
+        }
+      }
+      if (!unlocked.has(exerciseId)) {
+        unlocked.add(exerciseId);
+        progressMap[exerciseId] = freshProgress(exerciseId);
+      }
+
+      return {
+        ...prev,
+        unlockedExercises: Array.from(unlocked),
+        exerciseProgress: progressMap,
+      };
+    });
+  }, []);
+
   const resetProfile = useCallback(() => {
     setProfile(createDefaultProfile());
   }, []);
@@ -232,6 +264,7 @@ export function useEmomStore() {
     completeWorkout,
     unlockExercise,
     applyChallengeWin,
+    applyChallengePartial,
     resetProfile,
   };
 }

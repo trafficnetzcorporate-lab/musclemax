@@ -21,6 +21,10 @@ import {
 
 type View = 'dashboard' | 'exercise' | 'workout' | 'summary';
 
+// Minimum total reps in a Challenge to at least unlock the exercise (and earlier
+// tiers) for logging. A full 12×10 = 120 additionally masters it + unlocks the next tier.
+const CHALLENGE_UNLOCK_MIN = 60;
+
 interface SummaryData {
   session: WorkoutSession;
   previousSession: WorkoutSession | null;
@@ -31,7 +35,7 @@ interface SummaryData {
 }
 
 export default function EmomDashboard() {
-  const { profile, getExerciseProgress, completeWorkout, unlockExercise, applyChallengeWin } = useEmomStore();
+  const { profile, getExerciseProgress, completeWorkout, unlockExercise, applyChallengeWin, applyChallengePartial } = useEmomStore();
 
   const [view, setView] = useState<View>('dashboard');
   const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
@@ -64,36 +68,47 @@ export default function EmomDashboard() {
   };
 
   const handleCompleteChallenge = (session: WorkoutSession) => {
-    const won = session.sets.length === 10 && session.sets.every(s => (s.actualReps ?? 0) >= 12);
+    const totalReps = session.sets.reduce((s, set) => s + (set.actualReps || 0), 0);
+    const maxed = session.sets.length === 10 && session.sets.every(s => (s.actualReps ?? 0) >= 12);
+    const info = getExerciseById(session.exerciseId);
     setChallengeMode(false);
 
-    if (!won) {
-      const hit = session.sets.filter(s => (s.actualReps ?? 0) >= 12).length;
-      toast.error('Challenge not cleared', {
-        description: `You need 12 reps on all 10 sets — you hit 12 on ${hit}. Nothing unlocked. Try again when you're ready.`,
+    // Full clear (12×10): master it AND unlock the next tier.
+    if (maxed) {
+      const unlockedNames = getDependents(session.exerciseId).map(e => e.name);
+      applyChallengeWin(session);
+      setSummaryData({
+        session,
+        previousSession: null,
+        xpEarned: XP_REWARDS.COMPLETE_WORKOUT + XP_REWARDS.MASTER_EXERCISE,
+        isMastery: true,
+        isPR: true,
+        nextPrescription: Array(10).fill(12),
+      });
+      toast.success(`${info?.name} challenge cleared!`, {
+        description: unlockedNames.length
+          ? `Mastered. Unlocked: ${unlockedNames.join(', ')}. Earlier tiers are open for logging.`
+          : 'Mastered. Earlier tiers are open for logging.',
+      });
+      setView('summary');
+      return;
+    }
+
+    // Partial (≥60 reps): unlock this exercise + earlier tiers for logging.
+    if (totalReps >= CHALLENGE_UNLOCK_MIN) {
+      applyChallengePartial(session.exerciseId);
+      toast.success(`${info?.name} unlocked!`, {
+        description: `${totalReps} reps — strong enough to unlock ${info?.name} and every earlier tier for logging. Clear 12×10 to master it and open the next tier.`,
       });
       setView('exercise');
       return;
     }
 
-    const info = getExerciseById(session.exerciseId);
-    const unlockedNames = getDependents(session.exerciseId).map(e => e.name);
-    applyChallengeWin(session);
-
-    setSummaryData({
-      session,
-      previousSession: null,
-      xpEarned: XP_REWARDS.COMPLETE_WORKOUT + XP_REWARDS.MASTER_EXERCISE,
-      isMastery: true,
-      isPR: true,
-      nextPrescription: Array(10).fill(12),
+    // Under 60: nothing unlocks.
+    toast.error('Challenge not cleared', {
+      description: `You got ${totalReps} reps. You need ${CHALLENGE_UNLOCK_MIN}+ to unlock this exercise, or 12 on all 10 sets to master it. Try again when you're ready.`,
     });
-    toast.success(`${info?.name} challenge cleared!`, {
-      description: unlockedNames.length
-        ? `Mastered. Unlocked: ${unlockedNames.join(', ')}. Earlier tiers are open for logging.`
-        : 'Mastered. Earlier tiers are open for logging.',
-    });
-    setView('summary');
+    setView('exercise');
   };
 
   const handleCompleteWorkout = (session: WorkoutSession) => {
@@ -201,16 +216,24 @@ export default function EmomDashboard() {
             <Swords className="w-10 h-10 text-primary mx-auto mb-2" />
             <p className="text-sm font-semibold text-foreground mb-1">Challenge to unlock</p>
             <p className="text-xs text-muted-foreground mb-3">
-              Normally unlocked by mastering {prereq ? prereq.name : 'its prerequisite'}. Skip the grind:
-              hit <span className="text-primary font-bold">12 reps on all 10 sets</span> in one session to
-              master it now. Win and you also open every earlier tier for rep-logging plus whatever this move
-              unlocks next.
+              Normally unlocked by mastering {prereq ? prereq.name : 'its prerequisite'}. Skip the grind in one
+              all-out session:
             </p>
+            <div className="text-left text-xs text-muted-foreground mb-3 space-y-1.5">
+              <p>
+                <span className="text-primary font-bold">{CHALLENGE_UNLOCK_MIN}+ total reps</span> — unlocks this
+                exercise and every earlier tier for normal logging.
+              </p>
+              <p>
+                <span className="text-primary font-bold">12 reps × all 10 sets</span> — masters it outright and
+                also unlocks the next tier.
+              </p>
+            </div>
             <Button onClick={handleStartChallenge} className="w-full bg-primary text-primary-foreground gap-2">
               <Swords className="w-4 h-4" /> Start Challenge
             </Button>
             <p className="mt-2 text-[10px] text-muted-foreground/70">
-              Miss any set and nothing unlocks — you can retry anytime.
+              Under {CHALLENGE_UNLOCK_MIN} reps unlocks nothing — you can retry anytime.
             </p>
           </CardContent>
         </Card>
