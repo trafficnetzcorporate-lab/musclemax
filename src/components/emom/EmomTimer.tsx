@@ -104,7 +104,12 @@ export default function EmomTimer({ exerciseId, phase, prescription, onComplete,
       const elapsed = getElapsed();
       const remaining = Math.max(0, TOTAL_TIME - elapsed);
       setTimeLeft(Math.ceil(remaining));
-      setCurrentSet(Math.min(Math.floor(elapsed / SET_INTERVAL_SEC), 9));
+      const newActive = Math.min(Math.floor(elapsed / SET_INTERVAL_SEC), 9);
+      setActiveSet(newActive);
+      // Auto-follow the active set only if the user hasn't manually picked
+      // a different one to edit. Compare against the last active value we saw.
+      setSelectedSet(prev => (prev === lastActiveRef.current ? newActive : prev));
+      lastActiveRef.current = newActive;
 
       if (remaining <= 0) {
         setIsRunning(false);
