@@ -288,8 +288,8 @@ export default function EmomTimer({ exerciseId, phase, prescription, onComplete,
         </CardContent>
       </Card>
 
-      {/* Rep Input */}
-      {isRunning && (
+      {/* Rep Input — available during the session and after finish, for any selected set */}
+      {(isRunning || isFinished || timeLeft < TOTAL_TIME) && (
         <Card className="border-primary/20">
           <CardContent className="p-4">
             <p className="text-sm text-muted-foreground mb-2 text-center">
