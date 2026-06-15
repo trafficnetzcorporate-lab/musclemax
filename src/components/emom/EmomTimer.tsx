@@ -32,10 +32,12 @@ function triggerHaptic(pattern: 'tick' | 'warning' | 'start') {
 export default function EmomTimer({ exerciseId, phase, prescription, onComplete, onCancel, isChallenge = false }: EmomTimerProps) {
   const exercise = getExerciseById(exerciseId);
   const [sets, setSets] = useState<WorkoutSet[]>(() => buildWorkoutSets(prescription, phase));
-  const [currentSet, setCurrentSet] = useState(0);
+  const [activeSet, setActiveSet] = useState(0); // timer-driven (which minute we're in)
+  const [selectedSet, setSelectedSet] = useState(0); // what the rep pad edits
   const [timeLeft, setTimeLeft] = useState(TOTAL_TIME);
   const [isRunning, setIsRunning] = useState(false);
   const [isFinished, setIsFinished] = useState(false);
+  const lastActiveRef = useRef(0);
 
   // Timestamp-based clock — the single source of truth, survives JS throttling.
   const elapsedBeforePauseRef = useRef(0);
