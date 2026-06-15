@@ -292,6 +292,11 @@ export default function EmomTimer({ exerciseId, phase, prescription, onComplete,
       {(isRunning || isFinished || timeLeft < TOTAL_TIME) && (
         <Card className="border-primary/20">
           <CardContent className="p-4">
+            {isRunning && selectedSet !== activeSet && (
+              <p className="text-[11px] text-primary text-center mb-1">
+                ✎ Editing Set {selectedSet + 1} — tap the live set in the grid to return
+              </p>
+            )}
             <p className="text-sm text-muted-foreground mb-2 text-center">
               {sets[selectedSet]?.isAmrap ? (
                 <span className="text-primary font-bold flex items-center justify-center gap-1">
