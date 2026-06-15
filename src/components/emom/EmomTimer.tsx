@@ -151,9 +151,9 @@ export default function EmomTimer({ exerciseId, phase, prescription, onComplete,
   const isCountdown = isRunning && secondsInSet <= COUNTDOWN_LEAD && secondsInSet > 0;
 
   const logReps = useCallback((reps: number) => {
-    setSets(prev => prev.map((s, i) => i === currentSet ? { ...s, actualReps: reps } : s));
+    setSets(prev => prev.map((s, i) => i === selectedSet ? { ...s, actualReps: reps } : s));
     triggerHaptic('tick');
-  }, [currentSet]);
+  }, [selectedSet]);
 
   const handleStart = async () => {
     elapsedBeforePauseRef.current = 0;
@@ -246,7 +246,7 @@ export default function EmomTimer({ exerciseId, phase, prescription, onComplete,
           )}
 
           <div className="mt-2 text-sm text-muted-foreground">
-            Set {Math.min(currentSet + 1, 10)} of 10
+            Set {Math.min(selectedSet + 1, 10)} of 10
           </div>
 
           <div className="mt-4 h-2 bg-secondary rounded-full overflow-hidden">
@@ -293,33 +293,33 @@ export default function EmomTimer({ exerciseId, phase, prescription, onComplete,
         <Card className="border-primary/20">
           <CardContent className="p-4">
             <p className="text-sm text-muted-foreground mb-2 text-center">
-              {sets[currentSet]?.isAmrap ? (
+              {sets[selectedSet]?.isAmrap ? (
                 <span className="text-primary font-bold flex items-center justify-center gap-1">
                   <Flame className="w-4 h-4" /> AMRAP — Go until failure!
                 </span>
               ) : isChallenge ? (
-                `Set ${currentSet + 1}: Hit 12 reps to stay in the challenge`
+                `Set ${selectedSet + 1}: Hit 12 reps to stay in the challenge`
               ) : phase === 'baseline' ? (
-                `Set ${currentSet + 1}: Go to failure (max 12 reps)`
+                `Set ${selectedSet + 1}: Go to failure (max 12 reps)`
               ) : (
-                `Set ${currentSet + 1}: Target ${sets[currentSet]?.targetReps} reps`
+                `Set ${selectedSet + 1}: Target ${sets[selectedSet]?.targetReps} reps`
               )}
             </p>
             <div className="flex flex-wrap justify-center gap-2">
               {Array.from({ length: 20 }, (_, i) => i + 1).map(n => (
                 <Button
                   key={n}
-                  variant={sets[currentSet]?.actualReps === n ? 'default' : 'outline'}
+                  variant={sets[selectedSet]?.actualReps === n ? 'default' : 'outline'}
                   size="sm"
                   className={`w-10 h-10 text-sm font-bold ${
-                    sets[currentSet]?.actualReps === n
+                    sets[selectedSet]?.actualReps === n
                       ? 'bg-primary text-primary-foreground'
-                      : n > 12 && !sets[currentSet]?.isAmrap
+                      : n > 12 && !sets[selectedSet]?.isAmrap
                         ? 'opacity-40'
                         : ''
                   }`}
                   onClick={() => logReps(n)}
-                  disabled={n > 12 && !sets[currentSet]?.isAmrap && phase !== 'baseline' && !isChallenge}
+                  disabled={n > 12 && !sets[selectedSet]?.isAmrap && phase !== 'baseline' && !isChallenge}
                 >
                   {n}
                 </Button>
@@ -342,10 +342,10 @@ export default function EmomTimer({ exerciseId, phase, prescription, onComplete,
         {sets.map((set, i) => (
           <button
             key={i}
-            onClick={() => { if (isRunning || isFinished) setCurrentSet(i); }}
+            onClick={() => { if (isRunning || isFinished) setSelectedSet(i); }}
             className={`
               rounded-lg p-3 text-center transition-all border
-              ${i === currentSet && (isRunning || isFinished)
+              ${i === selectedSet && (isRunning || isFinished)
                 ? 'border-primary bg-primary/10 ring-2 ring-primary/30'
                 : set.actualReps !== null
                   ? 'border-primary/40 bg-primary/5'
