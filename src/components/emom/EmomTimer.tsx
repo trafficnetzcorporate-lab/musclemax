@@ -342,7 +342,7 @@ export default function EmomTimer({ exerciseId, phase, prescription, onComplete,
         {sets.map((set, i) => (
           <button
             key={i}
-            onClick={() => { if (isRunning || isFinished) setSelectedSet(i); }}
+            onClick={() => { if (timeLeft < TOTAL_TIME || isFinished) setSelectedSet(i); }}
             className={`
               rounded-lg p-3 text-center transition-all border
               ${i === selectedSet && (isRunning || isFinished)
