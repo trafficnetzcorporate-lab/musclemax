@@ -3,21 +3,57 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Share2, Copy, Check } from 'lucide-react';
 import { challengeUrl, copyLink, shareChallenge, canNativeShare } from '@/lib/share';
+import { getPublicChallenge } from '@/lib/challenges';
 import { toast } from 'sonner';
 import ChallengeResultCard from './ChallengeResultCard';
 
 interface ShareChallengeDialogProps {
   challengeId: string | null;
-  displayName: string;
-  exerciseId: string;
-  totalReps: number;
+  /** Fallbacks used only until the server's canonical challenge data loads. */
+  fallbackName?: string;
+  fallbackExerciseId?: string;
+  fallbackReps?: number;
   onClose: () => void;
 }
 
 export default function ShareChallengeDialog({
-  challengeId, displayName, exerciseId, totalReps, onClose,
+  challengeId, fallbackName, fallbackExerciseId, fallbackReps, onClose,
 }: ShareChallengeDialogProps) {
   const [copied, setCopied] = React.useState(false);
+  const [server, setServer] = React.useState<{
+    displayName: string;
+    exerciseId: string;
+    totalReps: number;
+  } | null>(null);
+
+  // Always render the card from the server's immutable challenge record —
+  // the creator score lives there, not in local summary state.
+  React.useEffect(() => {
+    if (!challengeId) {
+      setServer(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const c = await getPublicChallenge(challengeId);
+        if (!cancelled && c) {
+          setServer({
+            displayName: c.creator_display_name,
+            exerciseId: c.exercise_id,
+            totalReps: c.creator_total_reps,
+          });
+        }
+      } catch {
+        // Keep fallbacks; the URL and sharing still work.
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [challengeId]);
+
+  const displayName = server?.displayName ?? fallbackName ?? 'Athlete';
+  const exerciseId = server?.exerciseId ?? fallbackExerciseId ?? 'regular_pushup';
+  const totalReps = server?.totalReps ?? fallbackReps ?? 0;
   const url = challengeId ? challengeUrl(challengeId) : '';
 
   const handleShare = async () => {
