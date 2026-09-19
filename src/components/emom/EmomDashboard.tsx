@@ -550,6 +550,43 @@ export default function EmomDashboard() {
             </div>
           </CardContent>
         </Card>
+        {/* Account deletion — required for App Store submission. Removes the
+            account and personal data; challenges you created are anonymized and
+            their links deactivated, other athletes' history is preserved. */}
+        {user && (
+          <div className="mt-2 mb-10 text-center">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <button
+                  disabled={deleting}
+                  className="text-[11px] text-muted-foreground/70 hover:text-destructive transition-colors inline-flex items-center gap-1"
+                >
+                  <Trash2 className="w-3 h-3" /> Delete account
+                </button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete your account permanently?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This deletes your profile, workout history, progress, XP and challenge
+                    attempts. Friend Challenges you created stop working and show
+                    "Former Athlete". Other athletes keep their own results. This cannot
+                    be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Keep my account</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleDeleteAccount}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Delete permanently
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        )}
       </div>
 
       <ShareChallengeDialog
