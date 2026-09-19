@@ -27,6 +27,8 @@ export default function Challenge() {
   const [result, setResult] = useState<AttemptResult | null>(null);
   const [newChallengeId, setNewChallengeId] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
+  const [lastSessionId, setLastSessionId] = useState<string | null>(null);
+
 
   useEffect(() => {
     let cancelled = false;
@@ -66,6 +68,7 @@ export default function Challenge() {
     try {
       if (user) {
         await pushSession(user.id, session);
+        setLastSessionId(session.id);
         const res = await completeChallengeAttempt(challengeId, session.id);
         setResult(res);
       } else {
@@ -84,6 +87,7 @@ export default function Challenge() {
       toast.error('Could not save your result. Check your connection and try again.');
     }
   };
+
 
   // Rematch: same challenge, one more attempt.
   const handleRematch = () => {
