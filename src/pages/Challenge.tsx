@@ -99,14 +99,15 @@ export default function Challenge() {
   const handleChallengeSomeoneElse = async () => {
     if (!user || !lastSessionId) return;
     try {
-      const id = await import('@/lib/challenges').then(m => m.createChallengeFromSession(lastSessionId, challengeId));
+      const { createChallengeFromSession } = await import('@/lib/challenges');
+      const id = await createChallengeFromSession(lastSessionId, challengeId);
       setNewChallengeId(id);
     } catch {
       toast.error('Could not create the new challenge.');
     }
   };
 
-  const [lastSessionId, setLastSessionId] = useState<string | null>(null);
+
 
   // --- LOADING / MISSING ---
   if (view === 'loading') {
