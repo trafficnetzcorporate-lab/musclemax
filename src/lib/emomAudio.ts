@@ -226,20 +226,30 @@ export class EmomAudioEngine {
   }
 
   private tick() {
-    if (!this.ctx || !this.getElapsed) return;
+    if (!this.getElapsed) return;
+    if (!this.cfg.cuePlayer && !this.ctx) return;
     // The phone may have quietly suspended us; force it back to running so
     // currentTime keeps advancing and scheduled cues actually fire.
-    if (this.ctx.state !== 'running') {
+    if (this.ctx && this.ctx.state !== 'running') {
       this.ctx.resume().catch(() => { /* noop */ });
     }
     const elapsed = this.getElapsed();
-    const now = this.ctx.currentTime;
+    const now = this.ctx ? this.ctx.currentTime : 0;
     for (let i = 0; i < this.cues.length; i++) {
       if (this.scheduled.has(i)) continue;
       const dt = this.cues[i].at - elapsed; // seconds until this cue
       if (dt < -0.08) { this.scheduled.add(i); continue; } // already past — skip
       if (dt <= LOOKAHEAD) {
-        this.playCue(this.cues[i].type, now + Math.max(0, dt));
+        if (this.cfg.cuePlayer) {
+          // Native path: fire the bridge cue on time (ducking wraps the cue).
+          const t = setTimeout(() => {
+            this.cueTimeouts.delete(t);
+            this.cfg.cuePlayer!(this.cues[i].type);
+          }, Math.max(0, dt) * 1000);
+          this.cueTimeouts.add(t);
+        } else {
+          this.playCue(this.cues[i].type, now + Math.max(0, dt));
+        }
         this.scheduled.add(i);
       }
     }
