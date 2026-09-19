@@ -197,10 +197,13 @@ export default function EmomDashboard() {
             setSummaryData(null);
             setView('exercise');
           }}
+          onChallengeFriend={handleChallengeFriend}
+          challengePending={challengePending}
         />
       </div>
     );
   }
+
 
   // --- WORKOUT VIEW (also handles Challenge, including on locked exercises) ---
   if (view === 'workout' && selectedExercise && selectedInfo) {
