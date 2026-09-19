@@ -39,9 +39,9 @@ export default function ShareChallengeDialog({
         const c = await getPublicChallenge(challengeId);
         if (!cancelled && c) {
           setServer({
-            displayName: c.creator_display_name,
-            exerciseId: c.exercise_id,
-            totalReps: c.creator_total_reps,
+            displayName: c.creatorDisplayName,
+            exerciseId: c.exerciseId,
+            totalReps: c.creatorTotalReps,
           });
         }
       } catch {
