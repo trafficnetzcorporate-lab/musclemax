@@ -14,11 +14,16 @@ interface WorkoutSummaryProps {
   isPR: boolean;
   nextPrescription: number[];
   onContinue: () => void;
+  /** Optional Friend Challenge hook-up; renders nothing when absent. */
+  onChallengeFriend?: () => void;
+  challengePending?: boolean;
 }
 
 export default function WorkoutSummary({
-  session, previousSession, xpEarned, isMastery, isPR, nextPrescription, onContinue
+  session, previousSession, xpEarned, isMastery, isPR, nextPrescription, onContinue,
+  onChallengeFriend, challengePending,
 }: WorkoutSummaryProps) {
+
   const hasConfettied = useRef(false);
   const exercise = getExerciseById(session.exerciseId);
   const totalReps = session.sets.reduce((s, set) => s + (set.actualReps || 0), 0);
