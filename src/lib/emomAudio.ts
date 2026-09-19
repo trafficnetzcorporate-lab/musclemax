@@ -38,6 +38,12 @@ export interface EmomAudioConfig {
   totalTime: number;       // e.g. 600
   setInterval: number;     // e.g. 60
   countdownLead: number;   // e.g. 5 — how many seconds of ticks before each minute
+  /**
+   * Optional external cue player (native iOS bridge). When provided, the Web
+   * Audio graph is never built; each cue is routed to the native layer, which
+   * activates AVAudioSession with .duckOthers for the length of the cue only.
+   */
+  cuePlayer?: (type: CueType) => void;
 }
 
 const LOOKAHEAD = 0.75;        // schedule cues up to 750ms ahead (throttle-tolerant)
@@ -83,6 +89,7 @@ export class EmomAudioEngine {
   /** Must be called from a user gesture (Start/Resume) so audio is allowed. */
   async start(getElapsed: () => number) {
     this.getElapsed = getElapsed;
+    if (this.cfg.cuePlayer) { this.startScheduler(); return; }
     if (!this.ctx) this.buildGraph();
     await this.resumeCtx();
     this.startAudioEl();
