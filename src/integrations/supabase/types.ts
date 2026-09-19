@@ -66,7 +66,7 @@ export type Database = {
           created_at: string
           creator_display_name: string
           creator_total_reps: number
-          creator_user_id: string
+          creator_user_id: string | null
           exercise_id: string
           format: string
           id: string
@@ -79,7 +79,7 @@ export type Database = {
           created_at?: string
           creator_display_name?: string
           creator_total_reps: number
-          creator_user_id: string
+          creator_user_id?: string | null
           exercise_id: string
           format?: string
           id?: string
@@ -92,7 +92,7 @@ export type Database = {
           created_at?: string
           creator_display_name?: string
           creator_total_reps?: number
-          creator_user_id?: string
+          creator_user_id?: string | null
           exercise_id?: string
           format?: string
           id?: string

@@ -2,6 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { supabase } from '@/integrations/supabase/client';
 import { useEmomStore } from '@/hooks/useEmomStore';
 import { useAuth, setPostAuthRedirect } from '@/hooks/useAuth';
 import { getExerciseById, ALL_EXERCISES, getDependents } from '@/lib/exercises';
@@ -21,7 +27,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import {
   Flame, Trophy, Zap, Target, TrendingUp, Dumbbell,
   ArrowLeft, Star, Shield, ChevronRight, Calculator, Swords, Lock,
-  LogIn, LogOut, User as UserIcon
+  LogIn, LogOut, User as UserIcon, Trash2
 } from 'lucide-react';
 
 
@@ -52,6 +58,25 @@ export default function EmomDashboard() {
   const [challengeMode, setChallengeMode] = useState(false);
   const [shareChallengeId, setShareChallengeId] = useState<string | null>(null);
   const [challengePending, setChallengePending] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDeleteAccount = async () => {
+    setDeleting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('delete-account');
+      if (error || !data?.deleted) throw new Error(error?.message || 'Deletion failed');
+      localStorage.removeItem('emom_profile');
+      await signOut();
+      toast.success('Account deleted. Thanks for training with us.');
+      navigate('/auth');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Could not delete account');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+
 
 
   const nextLevelXp = LEVEL_THRESHOLDS[Math.min(profile.level, LEVEL_THRESHOLDS.length - 1)] || 99999;
@@ -544,6 +569,43 @@ export default function EmomDashboard() {
             </div>
           </CardContent>
         </Card>
+        {/* Account deletion — required for App Store submission. Removes the
+            account and personal data; challenges you created are anonymized and
+            their links deactivated, other athletes' history is preserved. */}
+        {user && (
+          <div className="mt-2 mb-10 text-center">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <button
+                  disabled={deleting}
+                  className="text-[11px] text-muted-foreground/70 hover:text-destructive transition-colors inline-flex items-center gap-1"
+                >
+                  <Trash2 className="w-3 h-3" /> Delete account
+                </button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete your account permanently?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This deletes your profile, workout history, progress, XP and challenge
+                    attempts. Friend Challenges you created stop working and show
+                    "Former Athlete". Other athletes keep their own results. This cannot
+                    be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Keep my account</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleDeleteAccount}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Delete permanently
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        )}
       </div>
 
       <ShareChallengeDialog
