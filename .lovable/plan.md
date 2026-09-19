@@ -40,11 +40,15 @@ No leaderboards, squads, leagues, tournaments, friend graphs, feeds, messaging, 
 
 ## Technical notes
 
-- Auth: Lovable Cloud email/password + managed Google. Optional session; existing localStorage store stays the offline source of truth and syncs upward when signed in, so no route becomes auth-gated.
-- Reuse existing tables. `profiles` gains `username`, `avatar_url`; `workout_sessions` gains a nullable `challenge_id`. New tables:
-  - `challenges` — id, creator_user_id, source_session_id, exercise_id, format (`emom_10`), prescription, creator_total_reps, parent_challenge_id (rematch), status, created_at.
-  - `challenge_attempts` — id, challenge_id, participant_user_id, total_reps, outcome, started_at, completed_at, status.
-- RLS: owner-scoped writes on attempts and challenges; a SECURITY DEFINER read function exposes only the public challenge fields (challenger display name, exercise, score) to anonymous visitors — never emails or private profile data. GRANTs added for every new table.
+- Auth: Lovable Cloud email/password + managed Google, written behind a thin provider-agnostic auth layer so Sign in with Apple drops in during the iOS pass. All app data keys off the stable account id — no Google-specific identity fields anywhere.
+- Source of truth: signed out, local storage is canonical. Signed in, the cloud database is canonical and local storage is only an offline cache that replays queued writes and then re-reads from the cloud. Two signed-in devices cannot hold divergent authoritative histories.
+- Sync/migration: every workout session carries a stable unique id (generated locally, preserved on upload). On each device's first authenticated sync, local history is merged into the account — unique sessions inserted, matching ids skipped via an idempotent upsert on session id. Nothing is discarded because cloud history already exists, and nothing is duplicated. Derived values (XP, level, streak, prescriptions, unlocks) are recomputed from the merged session set so all devices agree.
+- Reuse existing tables. `profiles` gains `username`, `avatar_url`; `workout_sessions` gains a stable client-supplied id (unique per user) and a nullable `challenge_id`. New tables:
+  - `challenges` — id, creator_user_id, source_session_id, exercise_id, format (`emom_10`), prescription, creator_total_reps, parent_challenge_id (rematch), status, created_at. One challenge is immutable once published and accepts unlimited attempts; prescription and creator score are derived from the referenced completed session, not client-declared, and cannot be updated afterwards.
+  - `challenge_attempts` — id, challenge_id, participant_user_id, total_reps, outcome, started_at, completed_at, status. A challenge has zero-to-many attempts (one public link, many participants).
+- Outcome integrity: WON/LOST/TIED is computed in the database from the stored creator and participant totals, not sent by the client. Attempt totals are written from the completed session; the UI only displays the derived outcome.
+- RLS: owner-scoped writes on sessions, challenges, and attempts; challenges are insert/read-only after creation. A SECURITY DEFINER read function exposes only public challenge fields (challenger display name, exercise, score) to anonymous visitors — never emails or private profile data. GRANTs added for every new table.
 - Routing: `/challenge/:id` is a real backend-resolved route (no state dependency), suitable for later Universal Links. Auth redirect uses `window.location.origin` and restores the saved `/challenge/:id` path after the session hydrates.
 - Challenge acceptance feeds the existing `EmomTimer` with the challenge's prescription; no second workout engine.
 - Verification covers the 10 listed acceptance flows, including a regression pass on a normal workout, progression, and saved data.
+
