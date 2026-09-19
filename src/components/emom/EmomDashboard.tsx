@@ -41,13 +41,18 @@ interface SummaryData {
 }
 
 export default function EmomDashboard() {
-  const { profile, getExerciseProgress, completeWorkout, unlockExercise, applyChallengeWin, applyChallengePartial } = useEmomStore();
+  const { profile, getExerciseProgress, completeWorkout, unlockExercise, applyChallengeWin, applyChallengePartial, syncing } = useEmomStore();
+  const { user, profile: authProfile, signOut } = useAuth();
+  const navigate = useNavigate();
 
   const [view, setView] = useState<View>('dashboard');
   const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'push' | 'pull' | 'legs'>('push');
   const [summaryData, setSummaryData] = useState<SummaryData | null>(null);
   const [challengeMode, setChallengeMode] = useState(false);
+  const [shareChallengeId, setShareChallengeId] = useState<string | null>(null);
+  const [challengePending, setChallengePending] = useState(false);
+
 
   const nextLevelXp = LEVEL_THRESHOLDS[Math.min(profile.level, LEVEL_THRESHOLDS.length - 1)] || 99999;
   const prevLevelXp = LEVEL_THRESHOLDS[Math.max(profile.level - 2, 0)] || 0;
