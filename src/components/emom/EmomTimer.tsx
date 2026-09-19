@@ -5,6 +5,8 @@ import { WorkoutPhase, WorkoutSet, WorkoutSession, ExerciseVariation } from '@/t
 import { getExerciseById } from '@/lib/exercises';
 import { buildWorkoutSets } from '@/lib/emom-algorithm';
 import { EmomAudioEngine } from '@/lib/emomAudio';
+import { isNative } from '@/lib/platform';
+import { setNativeKeepAwake, nativeMonotonicSeconds, playNativeCue } from '@/lib/native-bridges';
 import { Play, Pause, RotateCcw, Check, Flame, Zap, Swords } from 'lucide-react';
 
 interface EmomTimerProps {
@@ -40,9 +42,17 @@ export default function EmomTimer({ exerciseId, phase, prescription, onComplete,
   const lastActiveRef = useRef(0);
 
   // Timestamp-based clock — the single source of truth, survives JS throttling.
+  // On native, monoOffsetRef aligns Date.now() with the OS monotonic clock so a
+  // manual device-clock change can never shift the workout.
   const elapsedBeforePauseRef = useRef(0);
   const wallStartRef = useRef<number | null>(null);
   const rafRef = useRef<number | null>(null);
+  const monoOffsetRef = useRef(0);
+
+  const syncMonotonicOffset = useCallback(async () => {
+    const mono = await nativeMonotonicSeconds();
+    if (mono !== null) monoOffsetRef.current = mono - Date.now() / 1000;
+  }, []);
 
   // Audio engine + wake lock
   const audioRef = useRef<EmomAudioEngine | null>(null);
@@ -52,7 +62,7 @@ export default function EmomTimer({ exerciseId, phase, prescription, onComplete,
   const getElapsed = useCallback(() => {
     const base = elapsedBeforePauseRef.current;
     if (wallStartRef.current === null) return base;
-    return base + (Date.now() - wallStartRef.current) / 1000;
+    return base + (Date.now() / 1000 + monoOffsetRef.current - wallStartRef.current);
   }, []);
 
   const getAudio = useCallback(() => {
