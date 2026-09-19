@@ -156,7 +156,29 @@ export default function EmomDashboard() {
     setView('summary');
   };
 
+  // Friend Challenge: publish the just-completed workout as an immutable challenge.
+  const handleChallengeFriend = async () => {
+    if (!summaryData) return;
+    const { session } = summaryData;
+    if (!user) {
+      setPostAuthRedirect('/');
+      navigate('/auth');
+      return;
+    }
+    setChallengePending(true);
+    try {
+      await pushSession(user.id, session);
+      const id = await createChallengeFromSession(session.id);
+      setShareChallengeId(id);
+    } catch {
+      toast.error('Could not create the challenge. Check your connection and try again.');
+    } finally {
+      setChallengePending(false);
+    }
+  };
+
   const selectedProgress = selectedExercise ? getExerciseProgress(selectedExercise) : null;
+
   const selectedInfo = selectedExercise ? getExerciseById(selectedExercise) : null;
   const selectedUnlocked = selectedExercise ? profile.unlockedExercises.includes(selectedExercise as ExerciseVariation) : false;
 
