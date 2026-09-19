@@ -7,7 +7,7 @@ Adds optional accounts, cloud-saved progress, and a share loop where finishing a
 - Sign in with email + password or Google. Sessions stay signed in.
 - Nothing is gated: the app keeps working with no account. A small "Sign in" entry appears in the header; signed in, it shows the name and a sign-out option.
 - Profile holds: unique id, display name, username (auto-generated from the name, editable), optional avatar, and join date. No setup wizard before training.
-- First sign-in migrates whatever progress is already saved on the device into the account: levels, XP, streak, unlocked exercises, and every logged session. Migration runs once per device and is skipped if the account already holds history, so nothing is duplicated.
+- Signing in on any device merges that device's saved progress into the account: every logged workout it has that the account lacks is added, anything already there is matched and left alone, so nothing is lost and nothing is duplicated. Once signed in, the account is the master copy and the same history shows on every device.
 
 ## Part 2 — Friend Challenges
 
