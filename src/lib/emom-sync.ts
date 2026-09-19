@@ -143,13 +143,17 @@ function rowToSession(row: {
 }
 
 async function fetchCloudSessions(userId: string): Promise<WorkoutSession[]> {
+  // Friend Challenge attempts (challenge_id set) are stored but never replayed into
+  // progression — they are one-off head-to-head efforts, not prescribed workouts.
   const { data, error } = await supabase
     .from('workout_sessions')
     .select('id, client_session_id, exercise_id, phase, sets, total_reps, notes, workout_date')
-    .eq('user_id', userId);
+    .eq('user_id', userId)
+    .is('challenge_id', null);
   if (error) throw error;
   return (data || []).map(rowToSession);
 }
+
 
 export async function pushSession(userId: string, session: WorkoutSession) {
   const { error } = await supabase.from('workout_sessions').upsert(
