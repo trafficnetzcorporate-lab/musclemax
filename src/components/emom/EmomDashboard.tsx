@@ -382,9 +382,33 @@ export default function EmomDashboard() {
               <h1 className="text-2xl font-bold text-foreground tracking-tight">Golden Ratio</h1>
               <p className="text-xs text-muted-foreground">EMOM · Progressive Overload Engine</p>
             </div>
-            <Link to="/calculator" className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors">
-              <Calculator className="w-3.5 h-3.5" /> Calc
-            </Link>
+            <div className="flex items-center gap-3">
+              {syncing && <span className="text-[10px] text-muted-foreground animate-pulse">syncing…</span>}
+              <Link to="/challenges" className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors">
+                <Swords className="w-3.5 h-3.5" /> Fights
+              </Link>
+              <Link to="/calculator" className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors">
+                <Calculator className="w-3.5 h-3.5" /> Calc
+              </Link>
+              {user ? (
+                <Button
+                  variant="ghost" size="sm"
+                  onClick={async () => { await signOut(); toast.success('Signed out'); }}
+                  className="text-xs text-muted-foreground gap-1 px-2"
+                  title="Sign out"
+                >
+                  <LogOut className="w-3.5 h-3.5" /> {authProfile?.name || 'Sign out'}
+                </Button>
+              ) : (
+                <Button
+                  variant="ghost" size="sm" onClick={() => navigate('/auth')}
+                  className="text-xs text-muted-foreground gap-1 px-2"
+                >
+                  <LogIn className="w-3.5 h-3.5" /> Sign in
+                </Button>
+              )}
+            </div>
+
           </div>
 
           {/* Level & XP */}
