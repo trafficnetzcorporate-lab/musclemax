@@ -71,6 +71,9 @@ export default function EmomTimer({ exerciseId, phase, prescription, onComplete,
         totalTime: TOTAL_TIME,
         setInterval: SET_INTERVAL_SEC,
         countdownLead: COUNTDOWN_LEAD,
+        // On native, cues are played by the iOS bridge with per-cue AVAudioSession
+        // ducking; the Web Audio graph stays as the browser fallback.
+        cuePlayer: isNative() ? (type) => playNativeCue(type) : undefined,
       });
     }
     return audioRef.current;
@@ -176,8 +179,9 @@ export default function EmomTimer({ exerciseId, phase, prescription, onComplete,
   }, [selectedSet]);
 
   const handleStart = async () => {
+    await syncMonotonicOffset();
     elapsedBeforePauseRef.current = 0;
-    wallStartRef.current = Date.now();
+    wallStartRef.current = Date.now() / 1000 + monoOffsetRef.current;
     const audio = getAudio();
     await audio.start(getElapsed);
     audio.testThump(); // immediate confirmation the sound is working
@@ -188,7 +192,7 @@ export default function EmomTimer({ exerciseId, phase, prescription, onComplete,
 
   const handlePause = () => {
     if (wallStartRef.current !== null) {
-      elapsedBeforePauseRef.current += (Date.now() - wallStartRef.current) / 1000;
+      elapsedBeforePauseRef.current += Date.now() / 1000 + monoOffsetRef.current - wallStartRef.current;
       wallStartRef.current = null;
     }
     setIsRunning(false);
@@ -197,7 +201,8 @@ export default function EmomTimer({ exerciseId, phase, prescription, onComplete,
   };
 
   const handleResume = async () => {
-    wallStartRef.current = Date.now();
+    await syncMonotonicOffset();
+    wallStartRef.current = Date.now() / 1000 + monoOffsetRef.current;
     await getAudio().resume(getElapsed);
     setIsRunning(true);
     requestWakeLock();
