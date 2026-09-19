@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -161,6 +161,8 @@ export default function EmomDashboard() {
     if (!summaryData) return;
     const { session } = summaryData;
     if (!user) {
+      // Remember the intent so the challenge is created right after sign-in.
+      localStorage.setItem('mm_pending_challenge', session.id);
       setPostAuthRedirect('/');
       navigate('/auth');
       return;
@@ -176,6 +178,28 @@ export default function EmomDashboard() {
       setChallengePending(false);
     }
   };
+
+  // Resume a pending Friend Challenge after the user comes back from sign-in.
+  useEffect(() => {
+    if (!user) return;
+    const pending = localStorage.getItem('mm_pending_challenge');
+    if (!pending) return;
+    localStorage.removeItem('mm_pending_challenge');
+    (async () => {
+      // The session sync (merge on sign-in) may still be in flight — retry briefly.
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const id = await createChallengeFromSession(pending);
+          setShareChallengeId(id);
+          return;
+        } catch {
+          if (attempt === 2) toast.error('Could not create your challenge — open the workout summary and tap Challenge a Friend again.');
+          else await new Promise(r => setTimeout(r, 2500));
+        }
+      }
+    })();
+  }, [user]);
+
 
   const selectedProgress = selectedExercise ? getExerciseProgress(selectedExercise) : null;
 
