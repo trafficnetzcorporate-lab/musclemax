@@ -1,0 +1,19 @@
+{
+  "name": "musclemax-emom-native",
+  "version": "1.0.0",
+  "description": "Muscle Max native iOS bridges: monotonic clock, keep-awake, per-cue EMOM audio with AVAudioSession ducking.",
+  "main": "src/index.js",
+  "types": "src/index.d.ts",
+  "license": "UNLICENSED",
+  "private": true,
+  "capacitor": {
+    "ios": {
+      "src": "ios"
+    }
+  },
+  "files": [
+    "src/",
+    "ios/",
+    "Package.swift"
+  ]
+}

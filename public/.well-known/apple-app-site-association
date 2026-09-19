@@ -1,0 +1,23 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appIDs": ["TEAMID.com.jms.musclemax"],
+        "components": [
+          {
+            "/": "/challenge/*",
+            "comment": "Friend Challenge links open directly in the app"
+          },
+          {
+            "/": "*",
+            "comment": "All app routes open in the installed app"
+          }
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": ["TEAMID.com.jms.musclemax"]
+  }
+}

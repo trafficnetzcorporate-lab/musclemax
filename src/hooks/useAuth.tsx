@@ -2,6 +2,8 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { lovable } from '@/integrations/lovable/index';
+import { isNative, emailRedirectUrl } from '@/lib/platform';
+import { signInWithOAuthNative } from '@/lib/native-auth';
 
 /**
  * Provider-agnostic auth layer.
@@ -106,7 +108,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       email,
       password,
       options: {
-        emailRedirectTo: window.location.origin,
+        // Public HTTPS URL on native (Universal Links route it back into the app);
+        // current origin on web.
+        emailRedirectTo: emailRedirectUrl(),
         data: { display_name: displayName || 'Athlete' },
       },
     });
@@ -120,8 +124,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signInWithProvider = useCallback(async (provider: OAuthProviderId) => {
+    // Native iOS: system browser + custom-scheme return — never the OAuth page
+    // inside the WebView. Web: the Lovable managed OAuth flow.
+    if (isNative() && (provider === 'google' || provider === 'apple')) {
+      const result = await signInWithOAuthNative(provider);
+      return { error: result.error };
+    }
     const result = await lovable.auth.signInWithOAuth(provider as never, {
-      redirect_uri: window.location.origin,
+      redirect_uri: emailRedirectUrl(),
     });
     if (result.error) return { error: result.error.message || 'Sign-in failed' };
     return { error: null };

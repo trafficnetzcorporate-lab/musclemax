@@ -38,6 +38,12 @@ export interface EmomAudioConfig {
   totalTime: number;       // e.g. 600
   setInterval: number;     // e.g. 60
   countdownLead: number;   // e.g. 5 — how many seconds of ticks before each minute
+  /**
+   * Optional external cue player (native iOS bridge). When provided, the Web
+   * Audio graph is never built; each cue is routed to the native layer, which
+   * activates AVAudioSession with .duckOthers for the length of the cue only.
+   */
+  cuePlayer?: (type: CueType) => void;
 }
 
 const LOOKAHEAD = 0.75;        // schedule cues up to 750ms ahead (throttle-tolerant)
@@ -73,6 +79,7 @@ export class EmomAudioEngine {
   private audioEl: HTMLAudioElement | null = null;
   private timer: ReturnType<typeof setInterval> | null = null;
   private scheduled = new Set<number>(); // indices of cues already scheduled
+  private cueTimeouts = new Set<ReturnType<typeof setTimeout>>(); // pending native cue plays
   private getElapsed: (() => number) | null = null;
 
   constructor(cfg: EmomAudioConfig) {
@@ -83,6 +90,7 @@ export class EmomAudioEngine {
   /** Must be called from a user gesture (Start/Resume) so audio is allowed. */
   async start(getElapsed: () => number) {
     this.getElapsed = getElapsed;
+    if (this.cfg.cuePlayer) { this.startScheduler(); return; }
     if (!this.ctx) this.buildGraph();
     await this.resumeCtx();
     this.startAudioEl();
@@ -91,8 +99,9 @@ export class EmomAudioEngine {
 
   /** Lightweight re-arm when returning to the tab; safe to call often. */
   async ensureRunning(getElapsed: () => number) {
-    if (!this.ctx) return this.start(getElapsed);
     this.getElapsed = getElapsed;
+    if (this.cfg.cuePlayer) { this.startScheduler(); return; }
+    if (!this.ctx) return this.start(getElapsed);
     await this.resumeCtx();
     this.startAudioEl();
     if (!this.timer) this.startScheduler();
@@ -101,6 +110,8 @@ export class EmomAudioEngine {
   pause() {
     this.stopScheduler();
     this.scheduled.clear(); // re-derive future cues on resume
+    for (const t of this.cueTimeouts) clearTimeout(t);
+    this.cueTimeouts.clear();
     try { this.ctx?.suspend(); } catch { /* noop */ }
   }
 
@@ -113,6 +124,8 @@ export class EmomAudioEngine {
 
   stop() {
     this.stopScheduler();
+    for (const t of this.cueTimeouts) clearTimeout(t);
+    this.cueTimeouts.clear();
     try { this.keepAlive?.stop(); } catch { /* noop */ }
     try { this.audioEl?.pause(); } catch { /* noop */ }
     if (this.audioEl) this.audioEl.srcObject = null;
@@ -128,6 +141,7 @@ export class EmomAudioEngine {
 
   /** Fire one loud thump immediately — used to confirm sound works on Start. */
   testThump() {
+    if (this.cfg.cuePlayer) { this.cfg.cuePlayer('hard'); return; }
     if (!this.ctx) return;
     this.playCue('hard', this.ctx.currentTime + 0.02);
   }
@@ -212,20 +226,30 @@ export class EmomAudioEngine {
   }
 
   private tick() {
-    if (!this.ctx || !this.getElapsed) return;
+    if (!this.getElapsed) return;
+    if (!this.cfg.cuePlayer && !this.ctx) return;
     // The phone may have quietly suspended us; force it back to running so
     // currentTime keeps advancing and scheduled cues actually fire.
-    if (this.ctx.state !== 'running') {
+    if (this.ctx && this.ctx.state !== 'running') {
       this.ctx.resume().catch(() => { /* noop */ });
     }
     const elapsed = this.getElapsed();
-    const now = this.ctx.currentTime;
+    const now = this.ctx ? this.ctx.currentTime : 0;
     for (let i = 0; i < this.cues.length; i++) {
       if (this.scheduled.has(i)) continue;
       const dt = this.cues[i].at - elapsed; // seconds until this cue
       if (dt < -0.08) { this.scheduled.add(i); continue; } // already past — skip
       if (dt <= LOOKAHEAD) {
-        this.playCue(this.cues[i].type, now + Math.max(0, dt));
+        if (this.cfg.cuePlayer) {
+          // Native path: fire the bridge cue on time (ducking wraps the cue).
+          const t = setTimeout(() => {
+            this.cueTimeouts.delete(t);
+            this.cfg.cuePlayer!(this.cues[i].type);
+          }, Math.max(0, dt) * 1000);
+          this.cueTimeouts.add(t);
+        } else {
+          this.playCue(this.cues[i].type, now + Math.max(0, dt));
+        }
         this.scheduled.add(i);
       }
     }

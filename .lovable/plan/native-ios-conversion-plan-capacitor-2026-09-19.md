@@ -5,6 +5,7 @@
 The project is well suited to Capacitor: a pure client-side Vite + React 18 single-page app, backend reached over HTTPS, and timer/audio/sharing already isolated in small modules. No rewrite of the workout experience or Friend Challenge flow — the web code ships as-is inside the native shell, with thin native bridges added on top.
 
 Confirmed from the project:
+
 - Build command: `npm run build` (`vite build`). Output directory: `dist` (Vite default; no `build.outDir` override).
 - Routing: `BrowserRouter` with routes `/`, `/calculator`, `/female`, `/auth`, `/challenges`, `/challenge/:challengeId`, `*`.
 - Sharing already goes through one module (`src/lib/share.ts`).
@@ -33,16 +34,20 @@ Confirmed from the project:
 ## Phase 4 — Native bridges
 
 ### 1. Timer recovery (no background hacks)
+
 The goal is correct recovery, not keeping JS alive while suspended. The EMOM state is authoritative from a saved workout start time:
+
 - Store `wallStart` (and paused-elapsed) at workout start/resume.
 - Prefer a native monotonic clock (e.g. `ProcessInfo.systemUptime` / `mach_absolute_time`) exposed via a tiny bridge, so manual clock changes can't shift the workout; fall back to `Date.now()` on web.
 - When the app backgrounds, let iOS suspend normally. On becoming active again, immediately recompute elapsed time, current EMOM round, and seconds within the round from the stored start time — the existing `getElapsed()` contract already supports this, so no workout-logic changes.
 - No background modes, no scheduled OS notifications or background cues in this implementation (can be added separately later).
 
 ### 2. Keep screen awake during active workouts
+
 Native keep-awake plugin/bridge (`UIApplication.isIdleTimerDisabled = true`) acquired on workout start/resume, released on pause/finish/unmount — matching the existing wake-lock call sites. Web wake lock stays as browser fallback.
 
 ### 3. Per-cue EMOM sound with temporary ducking
+
 New native bridge method, e.g.:
 
 ```text
@@ -50,6 +55,7 @@ playEmomCue(kind: 'minute' | 'countdown' | 'finish') -> Promise<void>
 ```
 
 Behavior, executed natively per cue:
+
 1. Activate an AVAudioSession configured with `.duckOthers` — briefly lowering other playing audio.
 2. Play the Muscle Max EMOM cue natively (the existing heavy-thump cue sound, shipped as a native asset).
 3. Wait until the cue finishes.
@@ -58,6 +64,7 @@ Behavior, executed natively per cue:
 Ducking happens only around each short cue — the session is NOT held active for the whole workout. The existing Web Audio engine remains the browser fallback; the timer's cue scheduler calls the native bridge when available, otherwise the web engine. Default is ducking only — no `interruptSpokenAudioAndMixWithOthers` unless testing shows we intentionally want podcasts/spoken audio to pause.
 
 ### 4. Native share
+
 Extend `src/lib/share.ts` with a native branch (Capacitor Share plugin), keeping `shareChallenge` / `canNativeShare` signatures unchanged. Shared URLs come from `PUBLIC_APP_URL`.
 
 ## Phase 5 — App Store requirements (implementation, not just risks)
@@ -71,6 +78,7 @@ Extend `src/lib/share.ts` with a native branch (Capacitor Share plugin), keeping
 ## Phase 6 — Verification and deliverables
 
 Re-run the existing acceptance suite on a real iPhone, plus native checks:
+
 - Timer: background for 3+ minutes mid-workout (including a phone call) → resume shows the mathematically correct round/seconds; screen stays awake while active; cues duck music and restore volume after each cue.
 - Auth: Google and Apple sign-in from `/challenge/:id` both return to the same challenge.
 - Links: cold-start from a challenge URL opens the app to the challenge page; without the app it opens the web page.
@@ -86,6 +94,12 @@ Final report will include: files changed, the exact native bridge API created, t
 - **PWA/native duplication**: the installed web app and native app keep separate local caches; cloud is canonical for signed-in users, but signed-out local-only history on the PWA won't appear in the native app until sign-in on both.
 - **AdSense in the store binary** risks rejection — must be stripped from the native build.
 - **Account deletion scope**: deleting a creator's challenges must be defined (challenges with live attempts are anonymized/deactivated rather than broken for participants).
+  - Note from the creator: I would define it as:
+    - deleting an account removes the user's personal account data
+    - challenge creator identity becomes anonymized
+    - existing challenge attempts/results belonging to other users are preserved if needed for their history
+    - public challenge links created by the deleted user become inactive
+    - no other user's workout history gets deleted because the creator deleted their account
 
 ## Preserved / out of scope
 
