@@ -58,6 +58,25 @@ export default function EmomDashboard() {
   const [challengeMode, setChallengeMode] = useState(false);
   const [shareChallengeId, setShareChallengeId] = useState<string | null>(null);
   const [challengePending, setChallengePending] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDeleteAccount = async () => {
+    setDeleting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('delete-account');
+      if (error || !data?.deleted) throw new Error(error?.message || 'Deletion failed');
+      localStorage.removeItem('emom_profile');
+      await signOut();
+      toast.success('Account deleted. Thanks for training with us.');
+      navigate('/auth');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Could not delete account');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+
 
 
   const nextLevelXp = LEVEL_THRESHOLDS[Math.min(profile.level, LEVEL_THRESHOLDS.length - 1)] || 99999;
