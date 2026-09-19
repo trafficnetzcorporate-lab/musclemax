@@ -202,9 +202,9 @@ export default function Challenge() {
 
         <ShareChallengeDialog
           challengeId={newChallengeId}
-          displayName={myName}
-          exerciseId={challenge.exerciseId}
-          totalReps={result.participantTotalReps}
+          fallbackName={myName}
+          fallbackExerciseId={challenge.exerciseId}
+          fallbackReps={result.participantTotalReps}
           onClose={() => setNewChallengeId(null)}
         />
       </div>
