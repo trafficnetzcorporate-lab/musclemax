@@ -548,9 +548,9 @@ export default function EmomDashboard() {
 
       <ShareChallengeDialog
         challengeId={shareChallengeId}
-        displayName={authProfile?.name || profile.name}
-        exerciseId={summaryData?.session.exerciseId ?? 'regular_pushup'}
-        totalReps={summaryData ? summaryData.session.sets.reduce((s, st) => s + (st.actualReps || 0), 0) : 0}
+        fallbackName={authProfile?.name || profile.name}
+        fallbackExerciseId={summaryData?.session.exerciseId ?? 'regular_pushup'}
+        fallbackReps={summaryData ? summaryData.session.sets.reduce((s, st) => s + (st.actualReps || 0), 0) : 0}
         onClose={() => setShareChallengeId(null)}
       />
     </div>
