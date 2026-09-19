@@ -14,6 +14,103 @@ export type Database = {
   }
   public: {
     Tables: {
+      challenge_attempts: {
+        Row: {
+          challenge_id: string
+          completed_at: string | null
+          id: string
+          outcome: string | null
+          participant_display_name: string
+          participant_user_id: string
+          session_id: string | null
+          started_at: string
+          status: string
+          total_reps: number | null
+        }
+        Insert: {
+          challenge_id: string
+          completed_at?: string | null
+          id?: string
+          outcome?: string | null
+          participant_display_name?: string
+          participant_user_id: string
+          session_id?: string | null
+          started_at?: string
+          status?: string
+          total_reps?: number | null
+        }
+        Update: {
+          challenge_id?: string
+          completed_at?: string | null
+          id?: string
+          outcome?: string | null
+          participant_display_name?: string
+          participant_user_id?: string
+          session_id?: string | null
+          started_at?: string
+          status?: string
+          total_reps?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_attempts_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      challenges: {
+        Row: {
+          created_at: string
+          creator_display_name: string
+          creator_total_reps: number
+          creator_user_id: string
+          exercise_id: string
+          format: string
+          id: string
+          parent_challenge_id: string | null
+          prescription: number[]
+          source_session_id: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          creator_display_name?: string
+          creator_total_reps: number
+          creator_user_id: string
+          exercise_id: string
+          format?: string
+          id?: string
+          parent_challenge_id?: string | null
+          prescription: number[]
+          source_session_id?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          creator_display_name?: string
+          creator_total_reps?: number
+          creator_user_id?: string
+          exercise_id?: string
+          format?: string
+          id?: string
+          parent_challenge_id?: string | null
+          prescription?: number[]
+          source_session_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenges_parent_challenge_id_fkey"
+            columns: ["parent_challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exercise_progress: {
         Row: {
           best_total_reps: number
@@ -94,6 +191,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          avatar_url: string | null
           created_at: string
           id: string
           last_workout_date: string | null
@@ -104,8 +202,10 @@ export type Database = {
           unlocked_exercises: string[]
           updated_at: string
           user_id: string
+          username: string | null
         }
         Insert: {
+          avatar_url?: string | null
           created_at?: string
           id?: string
           last_workout_date?: string | null
@@ -116,8 +216,10 @@ export type Database = {
           unlocked_exercises?: string[]
           updated_at?: string
           user_id: string
+          username?: string | null
         }
         Update: {
+          avatar_url?: string | null
           created_at?: string
           id?: string
           last_workout_date?: string | null
@@ -128,11 +230,14 @@ export type Database = {
           unlocked_exercises?: string[]
           updated_at?: string
           user_id?: string
+          username?: string | null
         }
         Relationships: []
       }
       workout_sessions: {
         Row: {
+          challenge_id: string | null
+          client_session_id: string | null
           created_at: string
           exercise_id: string
           id: string
@@ -144,6 +249,8 @@ export type Database = {
           workout_date: string
         }
         Insert: {
+          challenge_id?: string | null
+          client_session_id?: string | null
           created_at?: string
           exercise_id: string
           id?: string
@@ -155,6 +262,8 @@ export type Database = {
           workout_date?: string
         }
         Update: {
+          challenge_id?: string | null
+          client_session_id?: string | null
           created_at?: string
           exercise_id?: string
           id?: string
@@ -172,7 +281,37 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      complete_challenge_attempt: {
+        Args: { p_challenge_id: string; p_client_session_id: string }
+        Returns: {
+          creator_display_name: string
+          creator_total_reps: number
+          outcome: string
+          participant_total_reps: number
+        }[]
+      }
+      create_challenge_from_session: {
+        Args: { p_client_session_id: string; p_parent_challenge_id?: string }
+        Returns: string
+      }
+      get_public_challenge: {
+        Args: { p_challenge_id: string }
+        Returns: {
+          attempt_count: number
+          created_at: string
+          creator_display_name: string
+          creator_total_reps: number
+          exercise_id: string
+          format: string
+          id: string
+          parent_challenge_id: string
+          prescription: number[]
+        }[]
+      }
+      start_challenge_attempt: {
+        Args: { p_challenge_id: string }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
