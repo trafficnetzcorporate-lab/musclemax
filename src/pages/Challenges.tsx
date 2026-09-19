@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { listSentChallenges, listMyAttempts, ChallengeRow, AttemptRow } from '@/lib/challenges';
 import { getExerciseById } from '@/lib/exercises';
 import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { challengeUrl } from '@/lib/share';
 import { toast } from 'sonner';
