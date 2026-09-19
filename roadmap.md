@@ -1,31 +1,26 @@
-# Roadmap — Accounts + Friend Challenges
+# Roadmap — Accounts + Friend Challenges + native iOS conversion
 
-## Backend
-- [ ] Schema: profiles (username, avatar_url), workout_sessions stable client id + challenge_id
-- [ ] challenges table (immutable after publish) + GRANTs + RLS
-- [ ] challenge_attempts table (many per challenge) + GRANTs + RLS
-- [ ] SECURITY DEFINER: public challenge view fn, create_challenge_from_session, submit_attempt (derives outcome)
-- [ ] Enable email auth + Google social auth
-- [ ] Regenerate types
+## Backend / auth / challenges (accounts loop)
+- [x] Schema: profiles, workout_sessions stable ids, challenges + attempts, RLS, SECURITY DEFINER functions
+- [x] Email auth + Google social auth enabled; Apple provider enabled (for iOS)
+- [x] All acceptance tests 1-10 passed (workout, sync, challenge loop, security, persistence)
 
-## Auth (optional accounts)
-- [ ] Provider-agnostic auth context (email/password + Google, Apple-ready)
-- [ ] /auth page with redirect-back context (challenge id preserved)
-- [ ] Header sign-in / sign-out entry
+## Native iOS conversion (Capacitor)
+- [x] Capacitor shell: @capacitor/core/cli/ios + App/Browser/Share plugins; appId com.jms.musclemax; webDir dist
+- [x] PUBLIC_APP_URL platform helper; share links always use it
+- [x] Native bridges: monotonicNow / setKeepAwake / playEmomCue (per-cue AVAudioSession ducking)
+- [x] EmomTimer: monotonic offset clock, native keep-awake, native cue player; web fallbacks intact
+- [x] Native auth path: system-browser OAuth + custom-scheme return; pending challenge preserved
+- [x] appUrlOpen listener: Universal Links + auth callback routing
+- [x] AdSense stripped from native build (dynamic web-only injection)
+- [x] AASA file placeholder (public/.well-known/apple-app-site-association)
+- [x] Account deletion: migration + delete-account edge function + dashboard UI
+- [x] Type check clean, build OK, web smoke test passes (no console errors)
 
-## Sync
-- [ ] Stable session ids in local store
-- [ ] Merge/dedupe local -> cloud on first authenticated sync per device
-- [ ] Cloud canonical when signed in; local cache otherwise
-
-## Friend Challenges
-- [ ] Challenge a Friend on workout summary
-- [ ] /challenge/:id public page (signed-out viewable)
-- [ ] Accept -> existing EmomTimer with challenge prescription
-- [ ] Result screen WON/LOST/TIED (derived) + Rematch + Challenge Someone Else
-- [ ] Share module (copy link + web share)
-- [ ] Result card component
-- [ ] Challenge history screen (sent/received/pending/completed)
-
-## Verification
-- [ ] Acceptance tests 1-10 incl. regression on existing workout flow
+## Before App Store submission (needs Mac / Apple account / permanent domain)
+- [ ] Xcode: Sign in with Apple capability, Associated Domains entitlement, URL Types "musclemax" scheme
+- [ ] Remove dev server.url from capacitor.config.ts for release
+- [ ] Host AASA at the permanent domain root (replace TEAMID placeholder)
+- [ ] Turn off email auto-confirm; confirm-email redirect → native-openable link
+- [ ] Allowlist com.jms.musclemax://auth-callback in auth redirect URLs if Supabase requires
+- [ ] Real-iPhone acceptance tests (timer recovery, keep-awake, cue ducking, Google/Apple sign-in, Universal Links, deletion)
