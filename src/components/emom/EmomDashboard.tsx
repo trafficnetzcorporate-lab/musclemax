@@ -3,9 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useEmomStore } from '@/hooks/useEmomStore';
+import { useAuth, setPostAuthRedirect } from '@/hooks/useAuth';
 import { getExerciseById, ALL_EXERCISES, getDependents } from '@/lib/exercises';
 import { ExerciseVariation, LEVEL_THRESHOLDS, WorkoutSession, XP_REWARDS } from '@/types/emom';
 import { processWorkout, calculateWorkoutXp } from '@/lib/emom-algorithm';
+import { pushSession } from '@/lib/emom-sync';
+import { createChallengeFromSession } from '@/lib/challenges';
 import { toast } from 'sonner';
 import EmomTimer from './EmomTimer';
 import SkillTree from './SkillTree';
@@ -13,11 +16,14 @@ import WorkoutHistory from './WorkoutHistory';
 import WorkoutSummary from './WorkoutSummary';
 import LegSection from './LegSection';
 import WeeklyProgressChart from './WeeklyProgressChart';
-import { Link } from 'react-router-dom';
+import ShareChallengeDialog from './ShareChallengeDialog';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Flame, Trophy, Zap, Target, TrendingUp, Dumbbell,
-  ArrowLeft, Star, Shield, ChevronRight, Calculator, Swords, Lock
+  ArrowLeft, Star, Shield, ChevronRight, Calculator, Swords, Lock,
+  LogIn, LogOut, User as UserIcon
 } from 'lucide-react';
+
 
 type View = 'dashboard' | 'exercise' | 'workout' | 'summary';
 
