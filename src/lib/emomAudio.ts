@@ -79,6 +79,7 @@ export class EmomAudioEngine {
   private audioEl: HTMLAudioElement | null = null;
   private timer: ReturnType<typeof setInterval> | null = null;
   private scheduled = new Set<number>(); // indices of cues already scheduled
+  private cueTimeouts = new Set<ReturnType<typeof setTimeout>>(); // pending native cue plays
   private getElapsed: (() => number) | null = null;
 
   constructor(cfg: EmomAudioConfig) {
@@ -123,6 +124,8 @@ export class EmomAudioEngine {
 
   stop() {
     this.stopScheduler();
+    for (const t of this.cueTimeouts) clearTimeout(t);
+    this.cueTimeouts.clear();
     try { this.keepAlive?.stop(); } catch { /* noop */ }
     try { this.audioEl?.pause(); } catch { /* noop */ }
     if (this.audioEl) this.audioEl.srcObject = null;
@@ -138,6 +141,7 @@ export class EmomAudioEngine {
 
   /** Fire one loud thump immediately — used to confirm sound works on Start. */
   testThump() {
+    if (this.cfg.cuePlayer) { this.cfg.cuePlayer('hard'); return; }
     if (!this.ctx) return;
     this.playCue('hard', this.ctx.currentTime + 0.02);
   }
