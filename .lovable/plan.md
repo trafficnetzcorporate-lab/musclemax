@@ -31,7 +31,7 @@ Details:
 - **Share:** copy link, plus the device share sheet where the browser supports it. Sharing is one small module so native iOS sharing can replace the surface later.
 - **Result card:** a clean card in the existing dark/gold style — "MICHAEL JUST HIT A NEW MAX / 10-MINUTE PUSH-UP EMOM / 150 REPS / CAN YOU BEAT IT?" — rendered in-app and copyable as an image, kept modular.
 - **Public page:** viewable signed out, showing only challenger display name, exercise, and score. Accepting requires an account; the challenge id is held through sign-in and the user lands straight back on it.
-- **Recipient result:** stored as an attempt, compared to the challenger, with Rematch (back to the challenger, referencing the previous challenge) and Challenge Someone Else (their own new score becomes a fresh challenge with a new link).
+- **Recipient result:** stored as that person's attempt on the challenge, and won/lost/tied is worked out from the two stored scores rather than claimed by the app. Then Rematch (back to the challenger, linked to the previous challenge) and Challenge Someone Else (their own new score becomes a fresh challenge with a new link).
 - **History:** a simple Challenges screen with Sent, Received, Pending, Completed.
 
 ## Out of scope
