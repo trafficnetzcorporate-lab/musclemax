@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { WorkoutSession, ExerciseProgress, XP_REWARDS } from '@/types/emom';
 import { getExerciseById } from '@/lib/exercises';
-import { Trophy, Zap, TrendingUp, ArrowUp, ArrowDown, Minus, Star, Flame } from 'lucide-react';
+import { Trophy, Zap, TrendingUp, ArrowUp, ArrowDown, Minus, Star, Flame, Swords } from 'lucide-react';
 
 interface WorkoutSummaryProps {
   session: WorkoutSession;
