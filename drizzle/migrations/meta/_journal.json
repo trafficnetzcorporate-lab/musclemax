@@ -8,6 +8,13 @@
       "when": 1789853506820,
       "tag": "0000_accounts_and_friend_challenges",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1789857389455,
+      "tag": "0001_account_deletion_and_challenge_lifecycle",
+      "breakpoints": true
     }
   ]
 }
