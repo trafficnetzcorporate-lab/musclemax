@@ -521,6 +521,15 @@ export default function EmomDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      <ShareChallengeDialog
+        challengeId={shareChallengeId}
+        displayName={authProfile?.name || profile.name}
+        exerciseId={summaryData?.session.exerciseId ?? 'regular_pushup'}
+        totalReps={summaryData ? summaryData.session.sets.reduce((s, st) => s + (st.actualReps || 0), 0) : 0}
+        onClose={() => setShareChallengeId(null)}
+      />
     </div>
   );
 }
+
