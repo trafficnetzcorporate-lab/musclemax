@@ -166,9 +166,21 @@ export default function WorkoutSummary({
         </Card>
       )}
 
+      {onChallengeFriend && (
+        <Button
+          onClick={onChallengeFriend}
+          disabled={challengePending}
+          variant="outline"
+          className="w-full py-5 text-base gap-2 border-primary/40 text-primary"
+        >
+          <Swords className="w-4 h-4" /> Challenge a Friend
+        </Button>
+      )}
+
       <Button onClick={onContinue} className="w-full bg-primary text-primary-foreground py-6 text-lg">
         Continue
       </Button>
     </div>
   );
 }
+
