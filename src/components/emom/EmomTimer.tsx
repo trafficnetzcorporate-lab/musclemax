@@ -77,6 +77,10 @@ export default function EmomTimer({ exerciseId, phase, prescription, onComplete,
   }, []);
 
   const requestWakeLock = useCallback(async () => {
+    if (isNative()) {
+      await setNativeKeepAwake(true);
+      return;
+    }
     try {
       const nav = navigator as Navigator & {
         wakeLock?: { request: (type: 'screen') => Promise<{ release?: () => void }> };
@@ -87,24 +91,30 @@ export default function EmomTimer({ exerciseId, phase, prescription, onComplete,
     } catch { /* noop */ }
   }, []);
 
-  const releaseWakeLock = useCallback(() => {
+  const releaseWakeLock = useCallback(async () => {
+    if (isNative()) {
+      await setNativeKeepAwake(false);
+      return;
+    }
     try { wakeLockRef.current?.release?.(); } catch { /* noop */ }
     wakeLockRef.current = null;
   }, []);
 
-  // On returning to the tab: re-acquire wake lock and re-arm audio (the OS may
-  // have suspended the AudioContext while we were away). The lookahead scheduler
-  // then re-derives upcoming cues from elapsed time, so nothing drifts.
+  // On returning to the tab: re-acquire wake lock, re-align the monotonic
+  // clock and re-arm audio (the OS may have suspended the AudioContext while
+  // we were away). The lookahead scheduler then re-derives upcoming cues from
+  // elapsed time, so nothing drifts.
   useEffect(() => {
     const onVis = () => {
       if (document.visibilityState === 'visible' && isRunning) {
+        syncMonotonicOffset();
         requestWakeLock();
         audioRef.current?.ensureRunning(getElapsed);
       }
     };
     document.addEventListener('visibilitychange', onVis);
     return () => document.removeEventListener('visibilitychange', onVis);
-  }, [isRunning, requestWakeLock, getElapsed]);
+  }, [isRunning, requestWakeLock, getElapsed, syncMonotonicOffset]);
 
   // Visual tick loop (rAF when visible + setInterval backup when throttled).
   useEffect(() => {
