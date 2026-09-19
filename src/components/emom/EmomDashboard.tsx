@@ -2,6 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { supabase } from '@/integrations/supabase/client';
 import { useEmomStore } from '@/hooks/useEmomStore';
 import { useAuth, setPostAuthRedirect } from '@/hooks/useAuth';
 import { getExerciseById, ALL_EXERCISES, getDependents } from '@/lib/exercises';
@@ -21,7 +27,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import {
   Flame, Trophy, Zap, Target, TrendingUp, Dumbbell,
   ArrowLeft, Star, Shield, ChevronRight, Calculator, Swords, Lock,
-  LogIn, LogOut, User as UserIcon
+  LogIn, LogOut, User as UserIcon, Trash2
 } from 'lucide-react';
 
 
