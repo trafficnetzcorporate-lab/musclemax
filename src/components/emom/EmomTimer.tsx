@@ -188,7 +188,7 @@ export default function EmomTimer({ exerciseId, phase, prescription, onComplete,
     audioRef.current?.stop();
     const totalReps = sets.reduce((sum, s) => sum + (s.actualReps || 0), 0);
     const session: WorkoutSession = {
-      id: Date.now().toString(),
+      id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
       date: new Date().toISOString(),
       exerciseId,
       phase: isChallenge ? 'completed' : phase,

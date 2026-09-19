@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { WorkoutSession, ExerciseProgress, XP_REWARDS } from '@/types/emom';
 import { getExerciseById } from '@/lib/exercises';
-import { Trophy, Zap, TrendingUp, ArrowUp, ArrowDown, Minus, Star, Flame } from 'lucide-react';
+import { Trophy, Zap, TrendingUp, ArrowUp, ArrowDown, Minus, Star, Flame, Swords } from 'lucide-react';
 
 interface WorkoutSummaryProps {
   session: WorkoutSession;
@@ -14,11 +14,16 @@ interface WorkoutSummaryProps {
   isPR: boolean;
   nextPrescription: number[];
   onContinue: () => void;
+  /** Optional Friend Challenge hook-up; renders nothing when absent. */
+  onChallengeFriend?: () => void;
+  challengePending?: boolean;
 }
 
 export default function WorkoutSummary({
-  session, previousSession, xpEarned, isMastery, isPR, nextPrescription, onContinue
+  session, previousSession, xpEarned, isMastery, isPR, nextPrescription, onContinue,
+  onChallengeFriend, challengePending,
 }: WorkoutSummaryProps) {
+
   const hasConfettied = useRef(false);
   const exercise = getExerciseById(session.exerciseId);
   const totalReps = session.sets.reduce((s, set) => s + (set.actualReps || 0), 0);
@@ -161,9 +166,21 @@ export default function WorkoutSummary({
         </Card>
       )}
 
+      {onChallengeFriend && (
+        <Button
+          onClick={onChallengeFriend}
+          disabled={challengePending}
+          variant="outline"
+          className="w-full py-5 text-base gap-2 border-primary/40 text-primary"
+        >
+          <Swords className="w-4 h-4" /> Challenge a Friend
+        </Button>
+      )}
+
       <Button onClick={onContinue} className="w-full bg-primary text-primary-foreground py-6 text-lg">
         Continue
       </Button>
     </div>
   );
 }
+

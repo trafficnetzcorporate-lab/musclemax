@@ -1,11 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useEmomStore } from '@/hooks/useEmomStore';
+import { useAuth, setPostAuthRedirect } from '@/hooks/useAuth';
 import { getExerciseById, ALL_EXERCISES, getDependents } from '@/lib/exercises';
 import { ExerciseVariation, LEVEL_THRESHOLDS, WorkoutSession, XP_REWARDS } from '@/types/emom';
 import { processWorkout, calculateWorkoutXp } from '@/lib/emom-algorithm';
+import { pushSession } from '@/lib/emom-sync';
+import { createChallengeFromSession } from '@/lib/challenges';
 import { toast } from 'sonner';
 import EmomTimer from './EmomTimer';
 import SkillTree from './SkillTree';
@@ -13,11 +16,14 @@ import WorkoutHistory from './WorkoutHistory';
 import WorkoutSummary from './WorkoutSummary';
 import LegSection from './LegSection';
 import WeeklyProgressChart from './WeeklyProgressChart';
-import { Link } from 'react-router-dom';
+import ShareChallengeDialog from './ShareChallengeDialog';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Flame, Trophy, Zap, Target, TrendingUp, Dumbbell,
-  ArrowLeft, Star, Shield, ChevronRight, Calculator, Swords, Lock
+  ArrowLeft, Star, Shield, ChevronRight, Calculator, Swords, Lock,
+  LogIn, LogOut, User as UserIcon
 } from 'lucide-react';
+
 
 type View = 'dashboard' | 'exercise' | 'workout' | 'summary';
 
@@ -35,13 +41,18 @@ interface SummaryData {
 }
 
 export default function EmomDashboard() {
-  const { profile, getExerciseProgress, completeWorkout, unlockExercise, applyChallengeWin, applyChallengePartial } = useEmomStore();
+  const { profile, getExerciseProgress, completeWorkout, unlockExercise, applyChallengeWin, applyChallengePartial, syncing } = useEmomStore();
+  const { user, profile: authProfile, signOut } = useAuth();
+  const navigate = useNavigate();
 
   const [view, setView] = useState<View>('dashboard');
   const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'push' | 'pull' | 'legs'>('push');
   const [summaryData, setSummaryData] = useState<SummaryData | null>(null);
   const [challengeMode, setChallengeMode] = useState(false);
+  const [shareChallengeId, setShareChallengeId] = useState<string | null>(null);
+  const [challengePending, setChallengePending] = useState(false);
+
 
   const nextLevelXp = LEVEL_THRESHOLDS[Math.min(profile.level, LEVEL_THRESHOLDS.length - 1)] || 99999;
   const prevLevelXp = LEVEL_THRESHOLDS[Math.max(profile.level - 2, 0)] || 0;
@@ -145,7 +156,53 @@ export default function EmomDashboard() {
     setView('summary');
   };
 
+  // Friend Challenge: publish the just-completed workout as an immutable challenge.
+  const handleChallengeFriend = async () => {
+    if (!summaryData) return;
+    const { session } = summaryData;
+    if (!user) {
+      // Remember the intent so the challenge is created right after sign-in.
+      localStorage.setItem('mm_pending_challenge', session.id);
+      setPostAuthRedirect('/');
+      navigate('/auth');
+      return;
+    }
+    setChallengePending(true);
+    try {
+      await pushSession(user.id, session);
+      const id = await createChallengeFromSession(session.id);
+      setShareChallengeId(id);
+    } catch {
+      toast.error('Could not create the challenge. Check your connection and try again.');
+    } finally {
+      setChallengePending(false);
+    }
+  };
+
+  // Resume a pending Friend Challenge after the user comes back from sign-in.
+  useEffect(() => {
+    if (!user) return;
+    const pending = localStorage.getItem('mm_pending_challenge');
+    if (!pending) return;
+    localStorage.removeItem('mm_pending_challenge');
+    (async () => {
+      // The session sync (merge on sign-in) may still be in flight — retry briefly.
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const id = await createChallengeFromSession(pending);
+          setShareChallengeId(id);
+          return;
+        } catch {
+          if (attempt === 2) toast.error('Could not create your challenge — open the workout summary and tap Challenge a Friend again.');
+          else await new Promise(r => setTimeout(r, 2500));
+        }
+      }
+    })();
+  }, [user]);
+
+
   const selectedProgress = selectedExercise ? getExerciseProgress(selectedExercise) : null;
+
   const selectedInfo = selectedExercise ? getExerciseById(selectedExercise) : null;
   const selectedUnlocked = selectedExercise ? profile.unlockedExercises.includes(selectedExercise as ExerciseVariation) : false;
 
@@ -164,10 +221,13 @@ export default function EmomDashboard() {
             setSummaryData(null);
             setView('exercise');
           }}
+          onChallengeFriend={handleChallengeFriend}
+          challengePending={challengePending}
         />
       </div>
     );
   }
+
 
   // --- WORKOUT VIEW (also handles Challenge, including on locked exercises) ---
   if (view === 'workout' && selectedExercise && selectedInfo) {
@@ -346,9 +406,33 @@ export default function EmomDashboard() {
               <h1 className="text-2xl font-bold text-foreground tracking-tight">Golden Ratio</h1>
               <p className="text-xs text-muted-foreground">EMOM · Progressive Overload Engine</p>
             </div>
-            <Link to="/calculator" className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors">
-              <Calculator className="w-3.5 h-3.5" /> Calc
-            </Link>
+            <div className="flex items-center gap-3">
+              {syncing && <span className="text-[10px] text-muted-foreground animate-pulse">syncing…</span>}
+              <Link to="/challenges" className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors">
+                <Swords className="w-3.5 h-3.5" /> Fights
+              </Link>
+              <Link to="/calculator" className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors">
+                <Calculator className="w-3.5 h-3.5" /> Calc
+              </Link>
+              {user ? (
+                <Button
+                  variant="ghost" size="sm"
+                  onClick={async () => { await signOut(); toast.success('Signed out'); }}
+                  className="text-xs text-muted-foreground gap-1 px-2"
+                  title="Sign out"
+                >
+                  <LogOut className="w-3.5 h-3.5" /> {authProfile?.name || 'Sign out'}
+                </Button>
+              ) : (
+                <Button
+                  variant="ghost" size="sm" onClick={() => navigate('/auth')}
+                  className="text-xs text-muted-foreground gap-1 px-2"
+                >
+                  <LogIn className="w-3.5 h-3.5" /> Sign in
+                </Button>
+              )}
+            </div>
+
           </div>
 
           {/* Level & XP */}
@@ -461,6 +545,15 @@ export default function EmomDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      <ShareChallengeDialog
+        challengeId={shareChallengeId}
+        fallbackName={authProfile?.name || profile.name}
+        fallbackExerciseId={summaryData?.session.exerciseId ?? 'regular_pushup'}
+        fallbackReps={summaryData ? summaryData.session.sets.reduce((s, st) => s + (st.actualReps || 0), 0) : 0}
+        onClose={() => setShareChallengeId(null)}
+      />
     </div>
   );
 }
+
