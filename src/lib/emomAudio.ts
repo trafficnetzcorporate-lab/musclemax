@@ -98,8 +98,9 @@ export class EmomAudioEngine {
 
   /** Lightweight re-arm when returning to the tab; safe to call often. */
   async ensureRunning(getElapsed: () => number) {
-    if (!this.ctx) return this.start(getElapsed);
     this.getElapsed = getElapsed;
+    if (this.cfg.cuePlayer) { this.startScheduler(); return; }
+    if (!this.ctx) return this.start(getElapsed);
     await this.resumeCtx();
     this.startAudioEl();
     if (!this.timer) this.startScheduler();
@@ -108,6 +109,8 @@ export class EmomAudioEngine {
   pause() {
     this.stopScheduler();
     this.scheduled.clear(); // re-derive future cues on resume
+    for (const t of this.cueTimeouts) clearTimeout(t);
+    this.cueTimeouts.clear();
     try { this.ctx?.suspend(); } catch { /* noop */ }
   }
 
