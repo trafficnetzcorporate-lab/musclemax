@@ -27,7 +27,7 @@ finish workout -> summary screen -> "Challenge a Friend"
 
 Details:
 
-- **Create:** a "Challenge a Friend" button on the workout summary. The challenge is built from the finished session — exercise, 10-minute EMOM structure, per-minute targets, total reps — no manual setup.
+- **Create:** a "Challenge a Friend" button on the workout summary. The challenge is built from the finished session — exercise, 10-minute EMOM structure, per-minute targets, total reps — no manual setup. Once posted, the challenge and its score never change, and one link can be taken on by any number of people.
 - **Share:** copy link, plus the device share sheet where the browser supports it. Sharing is one small module so native iOS sharing can replace the surface later.
 - **Result card:** a clean card in the existing dark/gold style — "MICHAEL JUST HIT A NEW MAX / 10-MINUTE PUSH-UP EMOM / 150 REPS / CAN YOU BEAT IT?" — rendered in-app and copyable as an image, kept modular.
 - **Public page:** viewable signed out, showing only challenger display name, exercise, and score. Accepting requires an account; the challenge id is held through sign-in and the user lands straight back on it.
