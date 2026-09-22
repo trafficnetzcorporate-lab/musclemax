@@ -47,7 +47,7 @@ export default function Challenges() {
 
   if (!loading && !user) {
     return (
-      <div className="min-h-screen bg-background p-4 max-w-lg mx-auto text-center pt-20">
+      <div className="min-h-dvh min-w-0 bg-background [overflow-wrap:anywhere] p-4 max-w-lg mx-auto text-center pt-20">
         <Swords className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
         <h1 className="text-xl font-bold text-foreground">Sign in to see your challenges</h1>
         <p className="text-sm text-muted-foreground mt-2 mb-6">
@@ -60,20 +60,20 @@ export default function Challenges() {
 
   if (busy || loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-dvh min-w-0 bg-background [overflow-wrap:anywhere] flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background p-4 max-w-lg mx-auto">
-      <h1 className="text-2xl font-bold text-foreground mb-4 mt-4">Friend Challenges</h1>
+    <div className="min-h-dvh min-w-0 bg-background [overflow-wrap:anywhere] p-4 max-w-lg mx-auto">
+      <h1 className="text-2xl font-bold leading-tight tracking-tight text-foreground mb-4 mt-4">Friend Challenges</h1>
 
       <Tabs defaultValue="received">
-        <TabsList className="w-full mb-4">
-          <TabsTrigger value="received" className="flex-1">Received</TabsTrigger>
-          <TabsTrigger value="sent" className="flex-1">Sent</TabsTrigger>
+        <TabsList className="grid h-auto w-full grid-cols-2 gap-1 items-stretch mb-4">
+          <TabsTrigger value="received" className="min-w-0 min-h-11 whitespace-normal px-2 py-2 leading-snug">Received</TabsTrigger>
+          <TabsTrigger value="sent" className="min-w-0 min-h-11 whitespace-normal px-2 py-2 leading-snug">Sent</TabsTrigger>
         </TabsList>
 
         <TabsContent value="received" className="space-y-2">
@@ -85,18 +85,18 @@ export default function Challenges() {
             const status = attemptStatus(a);
             return (
               <Card key={a.id} className="border-border">
-                <CardContent className="p-3 flex items-center justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-foreground truncate">
+                <CardContent className="p-4 flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1 basis-40">
+                    <p className="text-sm font-semibold leading-relaxed text-foreground">
                       {ch?.creator_display_name ?? 'Athlete'} · {exerciseName(ch?.exercise_id ?? '')}
                     </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs leading-relaxed text-muted-foreground">
                       {status === 'completed'
                         ? `${a.outcome === 'won' ? 'Won' : a.outcome === 'lost' ? 'Lost' : 'Tied'} · ${a.total_reps ?? 0} reps`
                         : 'Pending — not attempted yet'}
                     </p>
                   </div>
-                  <Button size="sm" variant="outline" className="border-primary/40 shrink-0"
+                  <Button size="sm" variant="outline" className="h-auto min-h-11 border-primary/40 shrink-0"
                     onClick={() => navigate(`/challenge/${a.challenge_id}`)}>
                     {status === 'completed' ? 'View' : 'Take it'}
                   </Button>
@@ -116,21 +116,22 @@ export default function Challenges() {
             const beaten = done.filter(a => (a.total_reps ?? 0) > c.creator_total_reps).length;
             return (
               <Card key={c.id} className="border-border">
-                <CardContent className="p-3 flex items-center justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-foreground truncate">
+                <CardContent className="p-4 flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1 basis-40">
+                    <p className="text-sm font-semibold leading-relaxed text-foreground">
                       {exerciseName(c.exercise_id)} · {c.creator_total_reps} reps
                     </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs leading-relaxed text-muted-foreground">
                       {attempts.length === 0
                         ? 'No attempts yet'
                         : `${attempts.length} ${attempts.length === 1 ? 'attempt' : 'attempts'} · beaten by ${beaten}`}
                     </p>
                   </div>
-                  <Button size="sm" variant="ghost" className="shrink-0"
+                  <Button size="sm" variant="ghost" className="min-h-11 min-w-11 shrink-0" aria-label={`Copy ${exerciseName(c.exercise_id)} challenge link`}
                     onClick={async () => {
                       const ok = await (await import('@/lib/share')).copyLink(challengeUrl(c.id));
-                      ok ? toast.success('Link copied') : toast.error('Could not copy');
+                      if (ok) toast.success('Link copied');
+                      else toast.error('Could not copy');
                     }}>
                     <Copy className="w-4 h-4" />
                   </Button>

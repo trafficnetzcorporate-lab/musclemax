@@ -112,7 +112,7 @@ export default function Challenge() {
   // --- LOADING / MISSING ---
   if (view === 'loading') {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-dvh min-w-0 bg-background [overflow-wrap:anywhere] flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
@@ -120,7 +120,7 @@ export default function Challenge() {
 
   if (view === 'missing') {
     return (
-      <div className="min-h-screen bg-background p-4 max-w-lg mx-auto text-center pt-20">
+      <div className="min-h-dvh min-w-0 bg-background [overflow-wrap:anywhere] p-4 max-w-lg mx-auto text-center pt-20">
         <Swords className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
         <h1 className="text-xl font-bold text-foreground">Challenge not found</h1>
         <p className="text-sm text-muted-foreground mt-2 mb-6">This link may have been mistyped.</p>
@@ -134,7 +134,7 @@ export default function Challenge() {
   // --- WORKOUT ---
   if (view === 'workout') {
     return (
-      <div className="min-h-screen bg-background p-4 max-w-lg mx-auto">
+      <div className="min-h-dvh min-w-0 bg-background [overflow-wrap:anywhere] p-4 max-w-lg mx-auto">
         <EmomTimer
           exerciseId={challenge.exerciseId}
           phase="baseline"
@@ -152,34 +152,34 @@ export default function Challenge() {
     const headline = result.outcome === 'won' ? 'YOU WON!' : result.outcome === 'lost' ? 'YOU LOST' : 'TIED!';
     const headlineColor = result.outcome === 'won' ? 'text-primary' : result.outcome === 'lost' ? 'text-destructive' : 'text-foreground';
     return (
-      <div className="min-h-screen bg-background p-4 max-w-lg mx-auto">
+      <div className="min-h-dvh min-w-0 bg-background [overflow-wrap:anywhere] p-4 max-w-lg mx-auto">
         <div className="text-center py-6">
-          <h1 className={`text-4xl font-black tracking-tight ${headlineColor}`}>{headline}</h1>
+          <h1 className={`text-4xl font-black leading-tight tracking-tight ${headlineColor}`}>{headline}</h1>
           <p className="text-xs text-muted-foreground mt-1">10-Minute {exercise?.name} EMOM</p>
         </div>
 
         <Card className="border-border mb-4">
           <CardContent className="p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground truncate pr-2">
+            <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+              <span className="min-w-0 flex-1 basis-36 text-sm leading-relaxed text-muted-foreground">
                 {result.creatorDisplayName} (challenger)
               </span>
-              <span className="text-2xl font-black text-foreground">{result.creatorTotalReps}</span>
+              <span className="min-w-0 text-2xl font-black tabular-nums leading-tight text-foreground">{result.creatorTotalReps}</span>
             </div>
             <div className="h-px bg-border" />
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-semibold text-primary truncate pr-2">You</span>
-              <span className="text-2xl font-black text-primary">{result.participantTotalReps}</span>
+            <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+              <span className="min-w-0 flex-1 basis-36 text-sm font-semibold text-primary">You</span>
+              <span className="min-w-0 text-2xl font-black tabular-nums leading-tight text-primary">{result.participantTotalReps}</span>
             </div>
           </CardContent>
         </Card>
 
-        <div className="grid grid-cols-2 gap-2 mb-4">
-          <Button onClick={handleRematch} variant="outline" className="gap-2 border-primary/40">
-            <RotateCcw className="w-4 h-4" /> Rematch
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,12rem),1fr))] gap-2 mb-4">
+          <Button onClick={handleRematch} variant="outline" className="h-auto min-h-11 gap-2 py-3 border-primary/40">
+            <RotateCcw className="w-4 h-4 shrink-0" /> Rematch
           </Button>
-          <Button onClick={handleChallengeSomeoneElse} disabled={!user || !lastSessionId} className="gap-2 bg-primary text-primary-foreground">
-            <Users className="w-4 h-4" /> Challenge Someone Else
+          <Button onClick={handleChallengeSomeoneElse} disabled={!user || !lastSessionId} className="h-auto min-h-11 gap-2 py-3 bg-primary text-primary-foreground">
+            <Users className="w-4 h-4 shrink-0" /> Challenge Someone Else
           </Button>
         </div>
         {!user && (
@@ -195,9 +195,9 @@ export default function Challenge() {
             url: challengeUrl(challengeId),
           }).then(r => { if (r === 'copied') toast.success('Link copied'); })}
           variant="secondary"
-          className="w-full gap-2"
+          className="h-auto min-h-11 w-full gap-2 py-3"
         >
-          <Share2 className="w-4 h-4" /> Share this challenge
+          <Share2 className="w-4 h-4 shrink-0" /> Share this challenge
         </Button>
 
         <ShareChallengeDialog
@@ -213,13 +213,13 @@ export default function Challenge() {
 
   // --- BRIEF (public, viewable without an account) ---
   return (
-    <div className="min-h-screen bg-background p-4 max-w-lg mx-auto">
+    <div className="min-h-dvh min-w-0 bg-background [overflow-wrap:anywhere] p-4 max-w-lg mx-auto">
       <div className="text-center py-6">
-        <p className="text-[10px] tracking-[0.3em] text-muted-foreground uppercase mb-2">Friend Challenge</p>
-        <h1 className="text-2xl font-bold text-foreground">
+        <p className="text-xs tracking-[0.2em] text-muted-foreground uppercase mb-2">Friend Challenge</p>
+        <h1 className="text-2xl font-bold leading-tight tracking-tight text-foreground">
           {challenge.creatorDisplayName} challenged you
         </h1>
-        <p className="text-sm text-muted-foreground mt-1">
+        <p className="text-sm leading-relaxed text-muted-foreground mt-2">
           {challenge.creatorDisplayName} hit <span className="font-bold text-primary">{challenge.creatorTotalReps} reps</span> in a
           10-minute {exercise?.name} EMOM. Beat it.
         </p>
@@ -228,14 +228,14 @@ export default function Challenge() {
       <Card className="border-primary/30 mb-4">
         <CardContent className="p-4">
           <p className="text-xs text-muted-foreground mb-3">The exact workout, preloaded:</p>
-          <div className="grid grid-cols-10 gap-1 mb-3">
+          <div className="grid grid-cols-5 sm:grid-cols-10 gap-1 mb-3">
             {(challenge.prescription.length === 10 ? challenge.prescription : Array(10).fill(12)).map((reps, i) => (
-              <div key={i} className="text-center rounded py-1 bg-secondary text-xs font-mono font-bold text-foreground">
+              <div key={i} aria-label={`Minute ${i + 1}: ${reps === -1 ? 'max reps' : `${reps} reps`}`} className="min-w-0 text-center rounded py-2 bg-secondary text-xs font-mono font-bold tabular-nums text-foreground">
                 {reps === -1 ? '🔥' : reps}
               </div>
             ))}
           </div>
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2 text-xs text-muted-foreground">
             <span>{exercise?.icon} {exercise?.name}</span>
             <span>Score to beat: <span className="font-bold text-primary">{challenge.creatorTotalReps}</span></span>
           </div>
@@ -248,8 +248,8 @@ export default function Challenge() {
         </p>
       )}
 
-      <Button onClick={handleAccept} disabled={starting || authLoading} className="w-full bg-primary text-primary-foreground py-6 text-lg gap-2">
-        {starting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Swords className="w-5 h-5" />}
+      <Button onClick={handleAccept} disabled={starting || authLoading} className="h-auto min-h-14 w-full bg-primary text-primary-foreground py-4 text-base gap-2">
+        {starting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Swords className="w-5 h-5 shrink-0" />}
         {user ? 'Accept Challenge' : 'Sign in to Accept'}
       </Button>
       {!user && (

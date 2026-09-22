@@ -40,9 +40,9 @@ export interface ExerciseInfo {
 }
 
 export type WorkoutPhase =
-  | 'baseline'   // First-ever workout: go to failure each set (max 12) to find capacity
+  | 'baseline'   // First-ever workout: find capacity, logging up to 30 per set
   | 'standard'   // Every subsequent workout: sets 1-9 at prescribed reps, set 10 AMRAP
-  | 'completed'; // Hit 12x10 — mastered
+  | 'completed'; // Earned 12x10 milestone; training can continue toward 30x10
 
 export interface WorkoutSet {
   setNumber: number; // 1-10

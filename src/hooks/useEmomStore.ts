@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { UserProfile, ExerciseProgress, WorkoutSession, ExerciseVariation, WorkoutPhase, XP_REWARDS, LEVEL_THRESHOLDS } from '@/types/emom';
 import { getDefaultUnlocked, getAncestors, getDependents } from '@/lib/exercises';
-import { processWorkout, calculateWorkoutXp, getBaselinePrescription } from '@/lib/emom-algorithm';
+import { processWorkout, calculateWorkoutXp, getBaselinePrescription, evenOutReps } from '@/lib/emom-algorithm';
 import { useAuth } from '@/hooks/useAuth';
 import { collectLocalSessions, mergeAndPullProfile, pushProfileState, pushSession } from '@/lib/emom-sync';
 
@@ -157,7 +157,7 @@ export function EmomStoreProvider({ children }: { children: React.ReactNode }) {
       if (!progress) return prev;
 
       const { nextPrescription, nextPhase } = processWorkout(session, progress);
-      const isMastery = nextPhase === 'completed';
+      const isMastery = nextPhase === 'completed' && !progress.mastered;
       const xpEarned = calculateWorkoutXp(session, isMastery);
       const totalReps = session.sets.reduce((s, set) => s + (set.actualReps || 0), 0);
 
@@ -242,17 +242,17 @@ export function EmomStoreProvider({ children }: { children: React.ReactNode }) {
 
       const existing = progressMap[id];
       const totalReps = session.sets.reduce((s, set) => s + (set.actualReps || 0), 0);
-      const challengeXp = XP_REWARDS.COMPLETE_WORKOUT + XP_REWARDS.MASTER_EXERCISE;
+      const challengeXp = XP_REWARDS.COMPLETE_WORKOUT + (existing?.mastered ? 0 : XP_REWARDS.MASTER_EXERCISE);
       unlocked.add(id);
       progressMap[id] = {
         exerciseId: id,
         currentPhase: 'completed',
-        currentPrescription: Array(10).fill(12),
+        currentPrescription: evenOutReps(totalReps),
         totalWorkouts: (existing?.totalWorkouts || 0) + 1,
         bestTotalReps: Math.max(existing?.bestTotalReps || 0, totalReps),
         history: [...(existing?.history || []), session],
         mastered: true,
-        masteredDate: new Date().toISOString(),
+        masteredDate: existing?.masteredDate ?? new Date().toISOString(),
         xp: (existing?.xp || 0) + challengeXp,
       };
 

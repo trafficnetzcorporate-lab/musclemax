@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { WorkoutPhase, WorkoutSet, WorkoutSession, ExerciseVariation } from '@/types/emom';
 import { getExerciseById } from '@/lib/exercises';
 import { buildWorkoutSets } from '@/lib/emom-algorithm';
+import { MAX_REPS_PER_SET, MILESTONE_REPS_PER_SET } from '@/lib/emom-limits';
 import { EmomAudioEngine } from '@/lib/emomAudio';
 import { isNative } from '@/lib/platform';
 import { setNativeKeepAwake, nativeMonotonicSeconds, playNativeCue } from '@/lib/native-bridges';
@@ -174,6 +175,7 @@ export default function EmomTimer({ exerciseId, phase, prescription, onComplete,
   const isCountdown = isRunning && secondsInSet <= COUNTDOWN_LEAD && secondsInSet > 0;
 
   const logReps = useCallback((reps: number) => {
+    if (!Number.isInteger(reps) || reps < 0 || reps > MAX_REPS_PER_SET) return;
     setSets(prev => prev.map((s, i) => i === selectedSet ? { ...s, actualReps: reps } : s));
     triggerHaptic('tick');
   }, [selectedSet]);
@@ -224,43 +226,43 @@ export default function EmomTimer({ exerciseId, phase, prescription, onComplete,
   };
 
   const phaseLabel: Record<WorkoutPhase, string> = {
-    baseline: '🎯 BASELINE — Go to failure each set (max 12)',
-    standard: '🔥 EMOM — Sets 1-9 hit targets, Set 10 GO ALL OUT',
-    completed: '🏆 MASTERED',
+    baseline: `🎯 BASELINE — Find your capacity (max ${MAX_REPS_PER_SET} per set)`,
+    standard: `🔥 EMOM — Sets 1-9 hit targets, Set 10 AMRAP (max ${MAX_REPS_PER_SET})`,
+    completed: `🏆 MILESTONE EARNED — Keep building toward ${MAX_REPS_PER_SET}×10`,
   };
   const bannerLabel = isChallenge
-    ? '⚔️ CHALLENGE — 60+ reps unlocks · 12×10 masters'
+    ? `⚔️ CHALLENGE — 60+ reps unlocks · ${MILESTONE_REPS_PER_SET}×10 milestone · log up to ${MAX_REPS_PER_SET}/set`
     : phaseLabel[phase];
 
   const allSetsLogged = sets.every(s => s.actualReps !== null);
 
   return (
-    <div className="space-y-4">
+    <div className="min-w-0 space-y-4 [overflow-wrap:anywhere]">
       {/* Phase Banner */}
       <div className={`rounded-lg border p-3 text-center ${isChallenge ? 'bg-primary/10 border-primary/40' : 'bg-secondary/50 border-border'}`}>
-        <p className="text-sm font-medium text-primary">{bannerLabel}</p>
-        <p className="text-xs text-muted-foreground mt-1">
+        <p className="text-sm font-medium leading-relaxed text-primary">{bannerLabel}</p>
+        <p className="text-xs leading-relaxed text-muted-foreground mt-1">
           {exercise?.icon} {exercise?.name}
         </p>
       </div>
 
       {/* Timer Display */}
       <Card className={`border-primary/30 bg-card transition-all duration-300 ${isCountdown ? 'ring-2 ring-primary/50 shadow-[0_0_30px_hsl(45_93%_58%/0.2)]' : ''}`}>
-        <CardContent className="p-6 text-center">
-          <div className={`text-6xl font-mono font-bold tracking-wider transition-all duration-300 ${
-            isCountdown ? 'text-primary scale-110' : 'text-foreground'
+        <CardContent className="px-4 py-6 text-center">
+          <div className={`text-[min(3.75rem,16vw)] font-mono font-bold tabular-nums leading-tight tracking-tight transition-colors duration-300 ${
+            isCountdown ? 'text-primary' : 'text-foreground'
           }`}>
             {formatTime(timeLeft)}
           </div>
 
           {isCountdown && (
-            <div className="mt-3 flex justify-center gap-2">
+            <div className="mx-auto mt-3 grid max-w-xs grid-cols-5 gap-[4px]">
               {[5, 4, 3, 2, 1].map(n => (
                 <div
                   key={n}
-                  className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 ${
+                  className={`min-w-0 min-h-9 rounded-full px-[2px] py-2 flex items-center justify-center text-sm font-bold transition-all duration-300 ${
                     secondsInSet <= n
-                      ? 'bg-primary text-primary-foreground scale-110'
+                      ? 'bg-primary text-primary-foreground'
                       : 'bg-secondary text-muted-foreground'
                   }`}
                 >
@@ -281,24 +283,24 @@ export default function EmomTimer({ exerciseId, phase, prescription, onComplete,
             />
           </div>
 
-          <div className="mt-4 flex justify-center gap-3">
+          <div className="mt-4 flex flex-wrap justify-center gap-3">
             {!isRunning && !isFinished && timeLeft === TOTAL_TIME && (
-              <Button onClick={handleStart} className="bg-primary text-primary-foreground gap-2 text-lg px-8 py-6">
+              <Button onClick={handleStart} className="h-auto min-h-12 max-w-full whitespace-normal bg-primary text-primary-foreground gap-2 text-lg px-6 py-3">
                 <Play className="w-5 h-5" /> START
               </Button>
             )}
             {isRunning && (
-              <Button onClick={handlePause} variant="outline" className="gap-2">
+              <Button onClick={handlePause} variant="outline" className="h-auto min-h-11 max-w-full whitespace-normal gap-2">
                 <Pause className="w-4 h-4" /> Pause
               </Button>
             )}
             {!isRunning && !isFinished && timeLeft < TOTAL_TIME && (
-              <Button onClick={handleResume} className="bg-primary text-primary-foreground gap-2">
+              <Button onClick={handleResume} className="h-auto min-h-11 max-w-full whitespace-normal bg-primary text-primary-foreground gap-2">
                 <Play className="w-4 h-4" /> Resume
               </Button>
             )}
             {!isRunning && timeLeft < TOTAL_TIME && (
-              <Button onClick={() => { releaseWakeLock(); audioRef.current?.stop(); onCancel(); }} variant="ghost" className="gap-2 text-muted-foreground">
+              <Button onClick={() => { releaseWakeLock(); audioRef.current?.stop(); onCancel(); }} variant="ghost" className="h-auto min-h-11 max-w-full whitespace-normal gap-2 text-muted-foreground">
                 <RotateCcw className="w-4 h-4" /> Cancel
               </Button>
             )}
@@ -306,7 +308,7 @@ export default function EmomTimer({ exerciseId, phase, prescription, onComplete,
 
           {/* Background-accuracy hint */}
           {isRunning && (
-            <p className="mt-3 text-[10px] text-muted-foreground/70">
+            <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
               Keep this screen up — we hold it awake so the timer stays exact and the heavy thump fires on every minute, even over music.
             </p>
           )}
@@ -324,32 +326,29 @@ export default function EmomTimer({ exerciseId, phase, prescription, onComplete,
             )}
             <p className="text-sm text-muted-foreground mb-2 text-center">
               {sets[selectedSet]?.isAmrap ? (
-                <span className="text-primary font-bold flex items-center justify-center gap-1">
-                  <Flame className="w-4 h-4" /> AMRAP — Go until failure!
+                <span className="text-primary font-bold flex items-start justify-center gap-2">
+                  <Flame className="mt-0.5 h-4 w-4 shrink-0" /> <span className="min-w-0">AMRAP — Up to {MAX_REPS_PER_SET} reps</span>
                 </span>
               ) : isChallenge ? (
-                `Set ${selectedSet + 1}: Hit 12 reps to stay in the challenge`
+                `Set ${selectedSet + 1}: ${MILESTONE_REPS_PER_SET} reps earns the milestone; log up to ${MAX_REPS_PER_SET}`
               ) : phase === 'baseline' ? (
-                `Set ${selectedSet + 1}: Go to failure (max 12 reps)`
+                `Set ${selectedSet + 1}: Find your capacity (max ${MAX_REPS_PER_SET} reps)`
               ) : (
                 `Set ${selectedSet + 1}: Target ${sets[selectedSet]?.targetReps} reps`
               )}
             </p>
-            <div className="flex flex-wrap justify-center gap-2">
-              {Array.from({ length: 20 }, (_, i) => i + 1).map(n => (
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,2.75rem),1fr))] gap-2">
+              {Array.from({ length: MAX_REPS_PER_SET }, (_, i) => i + 1).map(n => (
                 <Button
                   key={n}
                   variant={sets[selectedSet]?.actualReps === n ? 'default' : 'outline'}
                   size="sm"
-                  className={`w-10 h-10 text-sm font-bold ${
+                  className={`h-auto min-h-11 min-w-11 px-1 py-2 text-sm font-bold ${
                     sets[selectedSet]?.actualReps === n
                       ? 'bg-primary text-primary-foreground'
-                      : n > 12 && !sets[selectedSet]?.isAmrap
-                        ? 'opacity-40'
-                        : ''
+                      : ''
                   }`}
                   onClick={() => logReps(n)}
-                  disabled={n > 12 && !sets[selectedSet]?.isAmrap && phase !== 'baseline' && !isChallenge}
                 >
                   {n}
                 </Button>
@@ -357,7 +356,7 @@ export default function EmomTimer({ exerciseId, phase, prescription, onComplete,
               <Button
                 variant="outline"
                 size="sm"
-                className="w-10 h-10 text-sm font-bold text-destructive"
+                className="h-auto min-h-11 min-w-11 px-1 py-2 text-sm font-bold text-destructive"
                 onClick={() => logReps(0)}
               >
                 0
@@ -368,13 +367,13 @@ export default function EmomTimer({ exerciseId, phase, prescription, onComplete,
       )}
 
       {/* Set Grid */}
-      <div className="grid grid-cols-5 gap-2">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,3.25rem),1fr))] gap-2">
         {sets.map((set, i) => (
           <button
             key={i}
             onClick={() => { if (timeLeft < TOTAL_TIME || isFinished) setSelectedSet(i); }}
             className={`
-              rounded-lg p-3 text-center transition-all border
+              min-w-0 min-h-11 rounded-lg px-1.5 py-3 text-center transition-colors border
               ${i === selectedSet && (isRunning || isFinished)
                 ? 'border-primary bg-primary/10 ring-2 ring-primary/30'
                 : set.actualReps !== null
@@ -383,12 +382,12 @@ export default function EmomTimer({ exerciseId, phase, prescription, onComplete,
               }
             `}
           >
-            <div className="text-[10px] text-muted-foreground uppercase">Set {set.setNumber}</div>
+            <div className="text-[10px] leading-snug text-muted-foreground uppercase">Set {set.setNumber}</div>
             <div className={`text-lg font-bold ${set.actualReps !== null ? 'text-primary' : 'text-muted-foreground'}`}>
               {set.actualReps !== null ? set.actualReps : '—'}
             </div>
-            <div className="text-[10px] text-muted-foreground">
-              {set.isAmrap ? '🔥MAX' : isChallenge ? '=12' : phase === 'baseline' ? '≤12' : `/${set.targetReps}`}
+            <div className="text-[10px] leading-snug text-muted-foreground">
+              {set.isAmrap ? `🔥≤${MAX_REPS_PER_SET}` : isChallenge ? `≥${MILESTONE_REPS_PER_SET}` : phase === 'baseline' ? `≤${MAX_REPS_PER_SET}` : `/${set.targetReps}`}
             </div>
           </button>
         ))}
@@ -396,7 +395,7 @@ export default function EmomTimer({ exerciseId, phase, prescription, onComplete,
 
       {(isRunning || isFinished) && (
         <div className="text-center space-y-3">
-          <div className="flex items-center justify-center gap-2 text-muted-foreground">
+          <div className="flex flex-wrap items-center justify-center gap-2 text-muted-foreground">
             <Zap className="w-4 h-4 text-primary" />
             <span className="text-sm">
               Total: <span className="text-foreground font-bold text-lg">
@@ -405,9 +404,9 @@ export default function EmomTimer({ exerciseId, phase, prescription, onComplete,
             </span>
           </div>
           {(isFinished || allSetsLogged) && (
-            <Button onClick={handleFinish} className="bg-primary text-primary-foreground gap-2 px-8 py-6 text-lg w-full">
+            <Button onClick={handleFinish} className="h-auto min-h-12 w-full whitespace-normal bg-primary text-primary-foreground gap-2 px-4 py-3 text-lg leading-snug">
               {isChallenge ? <Swords className="w-5 h-5" /> : <Check className="w-5 h-5" />}
-              {isChallenge ? 'Submit Challenge' : 'Complete Workout'}
+              <span className="min-w-0">{isChallenge ? 'Submit Challenge' : 'Complete Workout'}</span>
             </Button>
           )}
         </div>

@@ -249,20 +249,20 @@ const FemaleMuscleCalculator = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-dvh min-w-0 bg-background [overflow-wrap:anywhere]">
       {/* Hero Section */}
       <div className="relative overflow-hidden">
         <div 
-          className="h-64 bg-cover bg-center bg-no-repeat"
+          className="min-h-64 bg-cover bg-center bg-no-repeat"
           style={{ backgroundImage: `url(${femaleFitnessHero})` }}
         >
           <div className="absolute inset-0 bg-black/50" />
-          <div className="relative h-full flex items-center justify-center text-center">
+          <div className="relative min-h-64 flex items-center justify-center px-4 py-10 text-center">
             <div>
-              <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight leading-tight text-white mb-4">
                 Female Genetic Muscle Potential
               </h1>
-              <p className="text-xl text-white/90">
+              <p className="text-base sm:text-xl leading-relaxed text-white/90">
                 Science-based calculations adapted for female physiology
               </p>
             </div>
@@ -270,31 +270,31 @@ const FemaleMuscleCalculator = () => {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto max-w-6xl px-4 py-6 sm:py-8">
         {/* Back Link */}
         <Link 
           to="/calculator" 
-          className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors mb-6"
+          className="inline-flex min-h-11 max-w-full items-center gap-2 py-2 leading-snug text-muted-foreground hover:text-primary transition-colors mb-6"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft className="w-4 h-4 shrink-0" />
           Back to Male Calculator
         </Link>
 
-        <div className="grid lg:grid-cols-2 gap-8">
+        <div className="grid min-w-0 lg:grid-cols-2 gap-6 lg:gap-8">
           {/* Input Form */}
-          <Card className="bg-gradient-dark border-border">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-foreground">
-                <Calculator className="w-5 h-5 text-primary" />
-                Body Measurements
+          <Card className="min-w-0 bg-gradient-dark border-border">
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="flex items-start gap-2 text-xl leading-snug text-foreground">
+                <Calculator className="w-5 h-5 mt-1 shrink-0 text-primary" />
+                <span className="min-w-0 [overflow-wrap:anywhere]">Body Measurements</span>
               </CardTitle>
               <CardDescription>
                 Enter your measurements to calculate your genetic potential
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
+            <CardContent className="space-y-5 p-4 pt-0 sm:p-6 sm:pt-0">
+              <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,9rem),1fr))] gap-4">
+                <div className="min-w-0 space-y-1.5">
                   <Label htmlFor="bodyFat">Current Body Fat %</Label>
                   <Input
                     id="bodyFat"
@@ -302,10 +302,10 @@ const FemaleMuscleCalculator = () => {
                     placeholder="25"
                     value={formData.bodyFat}
                     onChange={(e) => handleInputChange('bodyFat', e.target.value)}
-                    className="bg-secondary border-border"
+                    className="min-w-0 min-h-11 bg-secondary border-border"
                   />
                 </div>
-                <div>
+                <div className="min-w-0 space-y-1.5">
                   <Label htmlFor="targetBodyFat">Target Body Fat %</Label>
                   <Input
                     id="targetBodyFat"
@@ -313,13 +313,13 @@ const FemaleMuscleCalculator = () => {
                     placeholder="20"
                     value={formData.targetBodyFat}
                     onChange={(e) => handleInputChange('targetBodyFat', e.target.value)}
-                    className="bg-secondary border-border"
+                    className="min-w-0 min-h-11 bg-secondary border-border"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 gap-4">
-                <div>
+                <div className="min-w-0 space-y-1.5">
                   <Label htmlFor="weight">Weight (lbs)</Label>
                   <Input
                     id="weight"
@@ -327,13 +327,13 @@ const FemaleMuscleCalculator = () => {
                     placeholder="140"
                     value={formData.weight}
                     onChange={(e) => handleInputChange('weight', e.target.value)}
-                    className="bg-secondary border-border"
+                    className="min-w-0 min-h-11 bg-secondary border-border"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
+              <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,9rem),1fr))] gap-4">
+                <div className="min-w-0 space-y-1.5">
                   <Label htmlFor="wrist">Wrist (inches)</Label>
                   <Input
                     id="wrist"
@@ -342,10 +342,10 @@ const FemaleMuscleCalculator = () => {
                     placeholder="6.0"
                     value={formData.wrist}
                     onChange={(e) => handleInputChange('wrist', e.target.value)}
-                    className="bg-secondary border-border"
+                    className="min-w-0 min-h-11 bg-secondary border-border"
                   />
                 </div>
-                <div>
+                <div className="min-w-0 space-y-1.5">
                   <Label htmlFor="ankle">Ankle (inches)</Label>
                   <Input
                     id="ankle"
@@ -354,16 +354,16 @@ const FemaleMuscleCalculator = () => {
                     placeholder="8.0"
                     value={formData.ankle}
                     onChange={(e) => handleInputChange('ankle', e.target.value)}
-                    className="bg-secondary border-border"
+                    className="min-w-0 min-h-11 bg-secondary border-border"
                   />
                 </div>
               </div>
 
-              <div>
-                <Label>Height</Label>
-                <div className="flex gap-2 mt-2">
+              <div className="space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <Label htmlFor="height-unit">Height</Label>
                   <Select value={formData.heightUnit} onValueChange={(value) => handleInputChange('heightUnit', value)}>
-                    <SelectTrigger className="w-32 bg-secondary border-border">
+                    <SelectTrigger id="height-unit" className="w-auto min-w-24 min-h-11 bg-secondary border-border" aria-label="Height units">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -371,40 +371,51 @@ const FemaleMuscleCalculator = () => {
                       <SelectItem value="metric">cm</SelectItem>
                     </SelectContent>
                   </Select>
-                  
-                  {formData.heightUnit === 'imperial' ? (
-                    <>
+                </div>
+                {formData.heightUnit === 'imperial' ? (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="min-w-0 space-y-1.5">
+                      <Label htmlFor="height-feet" className="text-muted-foreground">Feet</Label>
                       <Input
+                        id="height-feet"
                         type="number"
                         placeholder="5"
                         value={formData.heightFt}
                         onChange={(e) => handleInputChange('heightFt', e.target.value)}
-                        className="bg-secondary border-border"
+                        className="min-w-0 min-h-11 bg-secondary border-border"
                       />
+                    </div>
+                    <div className="min-w-0 space-y-1.5">
+                      <Label htmlFor="height-inches" className="text-muted-foreground">Inches</Label>
                       <Input
+                        id="height-inches"
                         type="number"
                         placeholder="5"
                         value={formData.heightIn}
                         onChange={(e) => handleInputChange('heightIn', e.target.value)}
-                        className="bg-secondary border-border"
+                        className="min-w-0 min-h-11 bg-secondary border-border"
                       />
-                    </>
-                  ) : (
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="height-cm" className="text-muted-foreground">Centimeters</Label>
                     <Input
+                      id="height-cm"
                       type="number"
                       placeholder="165"
                       value={formData.heightCm}
                       onChange={(e) => handleInputChange('heightCm', e.target.value)}
-                      className="flex-1 bg-secondary border-border"
+                      className="min-w-0 min-h-11 bg-secondary border-border"
                     />
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
 
               <div>
-                <Label>Training Goal</Label>
+                <Label htmlFor="training-goal">Training Goal</Label>
                 <Select value={formData.trainingGoal} onValueChange={(value) => handleInputChange('trainingGoal', value)}>
-                  <SelectTrigger className="bg-secondary border-border mt-2">
+                  <SelectTrigger id="training-goal" className="min-w-0 min-h-11 h-auto bg-secondary border-border mt-2 py-3 text-left [&>span]:whitespace-normal">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -417,7 +428,7 @@ const FemaleMuscleCalculator = () => {
               <Button 
                 onClick={calculateResults}
                 disabled={!isFormValid()}
-                className="w-full bg-gradient-primary hover:shadow-glow transition-all duration-300 text-primary-foreground font-semibold"
+                className="h-auto min-h-11 w-full whitespace-normal py-3 leading-snug bg-gradient-primary hover:shadow-glow transition-all duration-300 text-primary-foreground font-semibold"
               >
                 Calculate Genetic Potential
               </Button>
@@ -425,40 +436,40 @@ const FemaleMuscleCalculator = () => {
           </Card>
 
           {/* Results */}
-          <Card className="bg-gradient-dark border-border">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-foreground">
-                <Target className="w-5 h-5 text-primary" />
-                Your Genetic Potential
+          <Card className="min-w-0 bg-gradient-dark border-border">
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="flex items-start gap-2 text-xl leading-snug text-foreground">
+                <Target className="w-5 h-5 mt-1 shrink-0 text-primary" />
+                <span className="min-w-0 [overflow-wrap:anywhere]">Your Genetic Potential</span>
               </CardTitle>
               <CardDescription>
                 Results based on female-adapted muscular potential research
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
               {results ? (
                 <div className="space-y-6">
                   <div className="grid gap-4">
                     <div className="bg-secondary/50 p-4 rounded-lg border border-border">
                       <div className="text-sm text-muted-foreground mb-1">Current Lean Body Mass</div>
-                      <div className="text-3xl font-bold text-foreground">
+                      <div className="text-3xl font-bold tabular-nums text-foreground">
                         {results.currentLeanBodyMass} lbs
                       </div>
                     </div>
 
                     <div className="bg-secondary/50 p-4 rounded-lg border border-border">
                       <div className="text-sm text-muted-foreground mb-1">Maximum Genetic Potential</div>
-                      <div className="text-3xl font-bold text-primary">
+                      <div className="text-3xl font-bold tabular-nums text-primary">
                         {results.maxGeneticLeanBodyMass} lbs
                       </div>
                     </div>
 
                     <div className="bg-gradient-primary/10 p-4 rounded-lg border border-primary/20">
-                      <div className="flex items-center gap-2 mb-1">
-                        <TrendingUp className="w-4 h-4 text-primary" />
-                        <div className="text-sm text-primary">Remaining Muscle Gain Potential</div>
+                      <div className="flex items-start gap-2 mb-1">
+                        <TrendingUp className="w-4 h-4 mt-0.5 shrink-0 text-primary" />
+                        <div className="min-w-0 text-sm text-primary [overflow-wrap:anywhere]">Remaining Muscle Gain Potential</div>
                       </div>
-                      <div className="text-3xl font-bold text-primary">
+                      <div className="text-3xl font-bold tabular-nums text-primary">
                         +{results.potentialGain} lbs
                       </div>
                     </div>
@@ -467,7 +478,7 @@ const FemaleMuscleCalculator = () => {
                       <div className="text-sm text-muted-foreground mb-1">
                         Bodyweight at Max (at {formData.targetBodyFat}% BF)
                       </div>
-                      <div className="text-3xl font-bold text-foreground">
+                      <div className="text-3xl font-bold tabular-nums text-foreground">
                         {results.bodyweightAtMax} lbs
                       </div>
                     </div>
@@ -475,7 +486,7 @@ const FemaleMuscleCalculator = () => {
 
                   <div className="bg-secondary/30 p-4 rounded-lg border border-border">
                     <div className="text-sm text-muted-foreground mb-2">Suggested Influencer</div>
-                    <div className="text-lg font-semibold text-primary">
+                    <div className="text-base sm:text-lg font-semibold leading-relaxed text-primary">
                       {results.influencerSuggestion}
                     </div>
                     <div className="text-sm text-muted-foreground mt-1">
@@ -483,7 +494,7 @@ const FemaleMuscleCalculator = () => {
                     </div>
                   </div>
 
-                  <div className="text-xs text-muted-foreground bg-muted/20 p-3 rounded border border-border">
+                  <div className="text-xs leading-relaxed text-muted-foreground bg-muted/20 p-3 rounded border border-border">
                     <strong>Note:</strong> These calculations use female-adapted formulas based on research 
                     showing women typically achieve ~52-55% of male maximum muscular potential due to 
                     hormonal differences. Individual results vary based on genetics, training, and nutrition. 

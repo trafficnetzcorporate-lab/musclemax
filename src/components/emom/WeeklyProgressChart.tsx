@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { ExerciseProgress } from '@/types/emom';
 import { getExerciseById } from '@/lib/exercises';
 import { BarChart3 } from 'lucide-react';
@@ -63,31 +63,39 @@ export default function WeeklyProgressChart({ exerciseProgress }: WeeklyProgress
   }
 
   return (
-    <Card className="border-border">
+    <Card className="min-w-0 border-border">
       <CardContent className="p-4">
         <div className="flex items-center gap-2 mb-3">
-          <BarChart3 className="w-4 h-4 text-primary" />
+          <BarChart3 className="w-4 h-4 shrink-0 text-primary" />
           <span className="text-sm font-semibold text-foreground">Weekly Total Reps</span>
         </div>
-        <div className="h-48">
+        <div className="h-48 min-w-0" role="img" aria-label="Weekly total reps by exercise. Values are available by selecting a point on the chart.">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+            <LineChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 20%)" />
               <XAxis
                 dataKey="week"
-                tick={{ fill: 'hsl(215, 16%, 65%)', fontSize: 10 }}
+                tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
                 stroke="hsl(220, 13%, 20%)"
+                minTickGap={24}
+                interval="preserveStartEnd"
               />
               <YAxis
-                tick={{ fill: 'hsl(215, 16%, 65%)', fontSize: 10 }}
+                width={48}
+                tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
                 stroke="hsl(220, 13%, 20%)"
               />
               <Tooltip
+                wrapperStyle={{ maxWidth: 'min(220px, calc(100vw - 64px))', outline: 'none' }}
+                itemStyle={{ whiteSpace: 'normal', overflowWrap: 'anywhere', padding: '3px 0' }}
                 contentStyle={{
                   backgroundColor: 'hsl(220, 13%, 11%)',
                   border: '1px solid hsl(220, 13%, 20%)',
                   borderRadius: '8px',
                   fontSize: 12,
+                  lineHeight: 1.5,
+                  whiteSpace: 'normal',
+                  overflowWrap: 'anywhere',
                   color: 'hsl(210, 40%, 98%)',
                 }}
               />
@@ -106,6 +114,14 @@ export default function WeeklyProgressChart({ exerciseProgress }: WeeklyProgress
             </LineChart>
           </ResponsiveContainer>
         </div>
+        <ul className="mt-3 space-y-2" aria-label="Exercises on chart">
+          {exerciseNames.map((ex, i) => (
+            <li key={ex.id} className="flex min-w-0 items-start gap-2 text-xs leading-relaxed text-muted-foreground">
+              <span aria-hidden="true" className="mt-1 h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+              <span className="min-w-0 break-words">{ex.name}</span>
+            </li>
+          ))}
+        </ul>
       </CardContent>
     </Card>
   );

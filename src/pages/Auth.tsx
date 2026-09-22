@@ -51,14 +51,14 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen bg-background p-4 max-w-md mx-auto">
-      <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="mb-4 text-muted-foreground">
-        <ArrowLeft className="w-4 h-4 mr-1" /> Back
+    <div className="min-h-dvh min-w-0 bg-background p-4 max-w-md mx-auto [overflow-wrap:anywhere]">
+      <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="mb-4 min-h-11 text-muted-foreground">
+        <ArrowLeft className="w-4 h-4 shrink-0 mr-1" /> Back
       </Button>
 
       <div className="text-center mb-6">
-        <h1 className="text-2xl font-bold text-foreground">Muscle Max Account</h1>
-        <p className="text-xs text-muted-foreground mt-1">
+        <h1 className="text-2xl font-bold tracking-tight leading-tight text-foreground">Muscle Max Account</h1>
+        <p className="text-sm leading-relaxed text-muted-foreground mt-2">
           {pendingRedirect?.startsWith('/challenge/')
             ? 'Sign in to take this challenge — we\'ll bring you right back to it.'
             : 'Keep your progress, XP and streak on every device. Training works without an account too.'}
@@ -67,23 +67,23 @@ export default function Auth() {
 
       <Card className="border-primary/20">
         <CardContent className="p-4">
-          <Button onClick={handleGoogle} disabled={busy} variant="outline" className="w-full mb-4">
+          <Button onClick={handleGoogle} disabled={busy} variant="outline" className="w-full mb-4 h-auto min-h-11">
             Continue with Google
           </Button>
 
           <Tabs defaultValue="signin">
-            <TabsList className="w-full mb-4">
-              <TabsTrigger value="signin" className="flex-1">Sign in</TabsTrigger>
-              <TabsTrigger value="signup" className="flex-1">Create account</TabsTrigger>
+            <TabsList className="grid h-auto w-full grid-cols-2 mb-4 gap-1 items-stretch">
+              <TabsTrigger value="signin" className="min-w-0 min-h-11 whitespace-normal px-2 py-2 leading-snug">Sign in</TabsTrigger>
+              <TabsTrigger value="signup" className="min-w-0 min-h-11 whitespace-normal px-2 py-2 leading-snug">Create account</TabsTrigger>
             </TabsList>
 
             <TabsContent value="signin">
-              <form onSubmit={handleSignIn} className="space-y-3">
-                <div>
+              <form onSubmit={handleSignIn} className="space-y-4">
+                <div className="min-w-0 space-y-1.5">
                   <Label htmlFor="si-email">Email</Label>
                   <Input id="si-email" type="email" required value={email} onChange={e => setEmail(e.target.value)} />
                 </div>
-                <div>
+                <div className="min-w-0 space-y-1.5">
                   <Label htmlFor="si-pass">Password</Label>
                   <Input id="si-pass" type="password" required value={password} onChange={e => setPassword(e.target.value)} />
                 </div>
@@ -94,16 +94,16 @@ export default function Auth() {
             </TabsContent>
 
             <TabsContent value="signup">
-              <form onSubmit={handleSignUp} className="space-y-3">
-                <div>
+              <form onSubmit={handleSignUp} className="space-y-4">
+                <div className="min-w-0 space-y-1.5">
                   <Label htmlFor="su-name">Display name</Label>
                   <Input id="su-name" value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="Michael" />
                 </div>
-                <div>
+                <div className="min-w-0 space-y-1.5">
                   <Label htmlFor="su-email">Email</Label>
                   <Input id="su-email" type="email" required value={email} onChange={e => setEmail(e.target.value)} />
                 </div>
-                <div>
+                <div className="min-w-0 space-y-1.5">
                   <Label htmlFor="su-pass">Password</Label>
                   <Input id="su-pass" type="password" required minLength={6} value={password} onChange={e => setPassword(e.target.value)} />
                 </div>

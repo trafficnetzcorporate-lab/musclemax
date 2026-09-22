@@ -1,7 +1,6 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { ExerciseProgress } from '@/types/emom';
-import { getExerciseById } from '@/lib/exercises';
 import { TrendingUp, Calendar, Zap } from 'lucide-react';
 
 interface WorkoutHistoryProps {
@@ -9,8 +8,7 @@ interface WorkoutHistoryProps {
   progress: ExerciseProgress;
 }
 
-export default function WorkoutHistory({ exerciseId, progress }: WorkoutHistoryProps) {
-  const exercise = getExerciseById(exerciseId);
+export default function WorkoutHistory({ progress }: WorkoutHistoryProps) {
   const history = progress.history.slice().reverse();
 
   if (history.length === 0) {
@@ -32,12 +30,12 @@ export default function WorkoutHistory({ exerciseId, progress }: WorkoutHistoryP
       <Card className="border-border">
         <CardContent className="p-4">
           <div className="flex items-center gap-2 mb-3">
-            <TrendingUp className="w-4 h-4 text-primary" />
+            <TrendingUp className="w-4 h-4 shrink-0 text-primary" />
             <span className="text-sm font-semibold text-foreground">Rep Progression</span>
           </div>
-          <div className="flex items-end gap-1 h-20">
+          <div className="flex items-end gap-px h-20" role="img" aria-label={`Rep progression across ${totalRepsOverTime.length} workouts`}>
             {totalRepsOverTime.map((reps, i) => (
-              <div key={i} className="flex-1 flex flex-col items-center">
+              <div key={i} className="h-full min-w-0 flex-1 flex flex-col items-center justify-end">
                 <div 
                   className="w-full bg-primary/80 rounded-t transition-all min-h-[2px]"
                   style={{ height: `${(reps / maxVal) * 100}%` }}
@@ -45,35 +43,36 @@ export default function WorkoutHistory({ exerciseId, progress }: WorkoutHistoryP
               </div>
             ))}
           </div>
-          <div className="flex justify-between mt-1">
-            <span className="text-[10px] text-muted-foreground">Workout 1</span>
-            <span className="text-[10px] text-muted-foreground">Workout {totalRepsOverTime.length}</span>
+          <div className="flex flex-wrap justify-between gap-2 mt-2">
+            <span className="text-xs text-muted-foreground">Workout 1</span>
+            <span className="text-xs text-muted-foreground">Workout {totalRepsOverTime.length}</span>
           </div>
         </CardContent>
       </Card>
 
       {/* Session list */}
       <div className="space-y-2">
-        {history.slice(0, 10).map((session, idx) => (
+        {history.slice(0, 10).map((session) => (
           <Card key={session.id} className="border-border">
             <CardContent className="p-3">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-3 h-3 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">
-                    {new Date(session.date).toLocaleDateString()}
+              <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
+                <div className="min-w-0 flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <Calendar className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
+                    <span>{new Date(session.date).toLocaleDateString()}</span>
                   </span>
-                  <span className="text-xs px-1.5 py-0.5 rounded bg-secondary text-muted-foreground capitalize">
+                  <span className="break-words text-xs px-2 py-1 rounded bg-secondary text-muted-foreground capitalize">
                     {session.phase.replace('_', ' ')}
                   </span>
                 </div>
-                <span className="text-sm font-bold text-primary">{session.totalReps} reps</span>
+                <span className="text-sm font-bold tabular-nums text-primary">{session.totalReps} reps</span>
               </div>
-              <div className="grid grid-cols-10 gap-1">
+              <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,2.75rem),1fr))] gap-1.5">
                 {session.sets.map((set, i) => (
                   <div 
                     key={i} 
-                    className={`text-center rounded py-0.5 text-xs font-mono ${
+                    aria-label={`Set ${i + 1}: ${set.actualReps ?? 'not recorded'}${set.actualReps == null ? '' : ' reps'}`}
+                    className={`min-w-0 break-words text-center rounded py-1.5 text-sm font-mono tabular-nums ${
                       set.isAmrap && (set.actualReps || 0) > 12
                         ? 'bg-primary/20 text-primary font-bold'
                         : 'bg-secondary text-muted-foreground'

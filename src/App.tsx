@@ -12,6 +12,7 @@ import { NATIVE_AUTH_SCHEME } from "@/lib/platform";
 import { completeNativeOAuth } from "@/lib/native-auth";
 import Index from "./pages/Index";
 import Calculator from "./pages/Calculator";
+import EmomRate from "./pages/EmomRate";
 import Female from "./pages/Female";
 import Auth from "./pages/Auth";
 import Challenge from "./pages/Challenge";
@@ -78,6 +79,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/calculator" element={<Calculator />} />
+              <Route path="/rate" element={<EmomRate />} />
               <Route path="/female" element={<Female />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/challenges" element={<Challenges />} />

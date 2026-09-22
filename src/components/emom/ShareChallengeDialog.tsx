@@ -73,24 +73,25 @@ export default function ShareChallengeDialog({
   const handleCopy = async () => {
     const ok = await copyLink(url);
     setCopied(ok);
-    ok ? toast.success('Link copied') : toast.error('Could not copy the link');
+    if (ok) toast.success('Link copied');
+    else toast.error('Could not copy the link');
   };
 
   return (
     <Dialog open={!!challengeId} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="max-w-sm min-w-0">
         <DialogHeader>
           <DialogTitle>Friend Challenge created</DialogTitle>
         </DialogHeader>
         <ChallengeResultCard displayName={displayName} exerciseId={exerciseId} totalReps={totalReps} />
-        <div className="rounded bg-secondary px-3 py-2 text-[11px] font-mono text-muted-foreground break-all">
+        <div className="min-w-0 rounded bg-secondary px-3 py-2 text-[11px] font-mono text-muted-foreground break-all">
           {url}
         </div>
-        <div className="flex gap-2">
-          <Button onClick={handleShare} className="flex-1 bg-primary text-primary-foreground gap-2">
-            <Share2 className="w-4 h-4" /> {canNativeShare() ? 'Share' : 'Copy link'}
+        <div className="flex min-w-0 flex-wrap items-stretch gap-2">
+          <Button onClick={handleShare} className="h-auto min-h-11 min-w-0 flex-1 basis-40 whitespace-normal bg-primary text-primary-foreground gap-2">
+            <Share2 className="w-4 h-4" /> <span className="min-w-0">{canNativeShare() ? 'Share' : 'Copy link'}</span>
           </Button>
-          <Button onClick={handleCopy} variant="outline" className="gap-2">
+          <Button onClick={handleCopy} variant="outline" aria-label={copied ? 'Link copied' : 'Copy challenge link'} className="h-auto min-h-11 min-w-11 flex-1 basis-11 px-3">
             {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
           </Button>
         </div>
