@@ -8,6 +8,8 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
+import { deleteAccountAndClearLocalData } from '@/lib/account-deletion';
 import { useEmomStore } from '@/hooks/useEmomStore';
 import { useAuth, setPostAuthRedirect } from '@/hooks/useAuth';
 import { getExerciseById, ALL_EXERCISES, getDependents } from '@/lib/exercises';
@@ -48,9 +50,10 @@ interface SummaryData {
 }
 
 export default function EmomDashboard() {
-  const { profile, getExerciseProgress, completeWorkout, unlockExercise, applyChallengeWin, applyChallengePartial, syncing } = useEmomStore();
+  const { profile, getExerciseProgress, completeWorkout, unlockExercise, applyChallengeWin, applyChallengePartial, resetProfile, syncing } = useEmomStore();
   const { user, profile: authProfile, signOut } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const [view, setView] = useState<View>('dashboard');
   const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
@@ -64,12 +67,15 @@ export default function EmomDashboard() {
   const handleDeleteAccount = async () => {
     setDeleting(true);
     try {
-      const { data, error } = await supabase.functions.invoke('delete-account');
-      if (error || !data?.deleted) throw new Error(error?.message || 'Deletion failed');
-      localStorage.removeItem('emom_profile');
-      await signOut();
+      await deleteAccountAndClearLocalData({
+        requestDeletion: () => supabase.functions.invoke('delete-account'),
+        signOut,
+        clearQueryCache: () => queryClient.clear(),
+        resetProfile,
+        storage: localStorage,
+      });
       toast.success('Account deleted. Thanks for training with us.');
-      navigate('/auth');
+      navigate('/auth', { replace: true });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Could not delete account');
     } finally {

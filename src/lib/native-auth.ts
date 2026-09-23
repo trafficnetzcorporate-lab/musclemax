@@ -6,7 +6,7 @@ import type { OAuthProviderId } from '@/hooks/useAuth';
 /**
  * Native OAuth (iOS): never run the provider's authorization page inside the
  * app WebView. We hand the provider URL to the system browser
- * (ASWebAuthenticationSession-backed), and the provider returns to the app via
+ * (SFSafariViewController on iOS), and the provider returns to the app via
  * the custom scheme `com.jms.musclemax://auth-callback`, where the appUrlOpen
  * listener (see App.tsx) extracts the tokens and establishes the session.
  *
