@@ -132,7 +132,9 @@ export default function EmomTimer({ exerciseId, phase, prescription, onComplete,
       setActiveSet(newActive);
       // Auto-follow the active set only if the user hasn't manually picked
       // a different one to edit. Compare against the last active value we saw.
-      setSelectedSet(prev => (prev === lastActiveRef.current ? newActive : prev));
+      // Capture it before React runs the queued updater and the ref advances.
+      const previousActive = lastActiveRef.current;
+      setSelectedSet(prev => (prev === previousActive ? newActive : prev));
       lastActiveRef.current = newActive;
 
       if (remaining <= 0) {
@@ -273,7 +275,7 @@ export default function EmomTimer({ exerciseId, phase, prescription, onComplete,
           )}
 
           <div className="mt-2 text-sm text-muted-foreground">
-            Set {Math.min(selectedSet + 1, 10)} of 10
+            Set {Math.min(activeSet + 1, 10)} of 10
           </div>
 
           <div className="mt-4 h-2 bg-secondary rounded-full overflow-hidden">

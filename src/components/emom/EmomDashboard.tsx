@@ -18,6 +18,7 @@ import { processWorkout, calculateWorkoutXp, getBaselinePrescription, evenOutRep
 import { MAX_REPS_PER_SET } from '@/lib/emom-limits';
 import { pushSession } from '@/lib/emom-sync';
 import { createChallengeFromSession } from '@/lib/challenges';
+import { challengeErrorMessage } from '@/lib/challenge-errors';
 import { toast } from 'sonner';
 import EmomTimer from './EmomTimer';
 import SkillTree from './SkillTree';
@@ -205,8 +206,8 @@ export default function EmomDashboard() {
       await pushSession(user.id, session);
       const id = await createChallengeFromSession(session.id);
       setShareChallengeId(id);
-    } catch {
-      toast.error('Could not create the challenge. Check your connection and try again.');
+    } catch (error) {
+      toast.error(challengeErrorMessage(error));
     } finally {
       setChallengePending(false);
     }
@@ -234,6 +235,17 @@ export default function EmomDashboard() {
   }, [user]);
 
 
+  // The summary returns early, so keep sharing available in every dashboard view.
+  const shareDialog = (
+    <ShareChallengeDialog
+      challengeId={shareChallengeId}
+      fallbackName={authProfile?.name || profile.name}
+      fallbackExerciseId={summaryData?.session.exerciseId ?? 'regular_pushup'}
+      fallbackReps={summaryData ? summaryData.session.sets.reduce((s, st) => s + (st.actualReps || 0), 0) : 0}
+      onClose={() => setShareChallengeId(null)}
+    />
+  );
+
   const selectedProgress = selectedExercise ? getExerciseProgress(selectedExercise) : null;
 
   const selectedInfo = selectedExercise ? getExerciseById(selectedExercise) : null;
@@ -243,6 +255,7 @@ export default function EmomDashboard() {
   if (view === 'summary' && summaryData) {
     return (
       <div className="min-h-screen bg-background p-4 max-w-lg mx-auto">
+        {shareDialog}
         <WorkoutSummary
           session={summaryData.session}
           previousSession={summaryData.previousSession}
@@ -271,6 +284,7 @@ export default function EmomDashboard() {
       : (timerPhase === 'baseline' ? getBaselinePrescription() : selectedProgress?.currentPrescription ?? getBaselinePrescription());
     return (
       <div className="min-h-screen bg-background p-4 max-w-lg mx-auto">
+        {shareDialog}
         <Button variant="ghost" size="sm" onClick={() => setView('exercise')} className="mb-4 min-h-11 text-muted-foreground">
           <ArrowLeft className="w-4 h-4 mr-1" /> Back
         </Button>
@@ -291,6 +305,7 @@ export default function EmomDashboard() {
     const prereq = selectedInfo.prerequisiteId ? getExerciseById(selectedInfo.prerequisiteId) : null;
     return (
       <div className="min-h-screen bg-background p-4 max-w-lg mx-auto">
+        {shareDialog}
         <Button variant="ghost" size="sm" onClick={() => setView('dashboard')} className="mb-4 min-h-11 text-muted-foreground">
           <ArrowLeft className="w-4 h-4 mr-1" /> Back
         </Button>
@@ -344,6 +359,7 @@ export default function EmomDashboard() {
 
     return (
       <div className="min-h-screen bg-background p-4 max-w-lg mx-auto">
+        {shareDialog}
         <Button variant="ghost" size="sm" onClick={() => setView('dashboard')} className="mb-4 min-h-11 text-muted-foreground">
           <ArrowLeft className="w-4 h-4 mr-1" /> Back
         </Button>
@@ -624,13 +640,7 @@ export default function EmomDashboard() {
         )}
       </div>
 
-      <ShareChallengeDialog
-        challengeId={shareChallengeId}
-        fallbackName={authProfile?.name || profile.name}
-        fallbackExerciseId={summaryData?.session.exerciseId ?? 'regular_pushup'}
-        fallbackReps={summaryData ? summaryData.session.sets.reduce((s, st) => s + (st.actualReps || 0), 0) : 0}
-        onClose={() => setShareChallengeId(null)}
-      />
+      {shareDialog}
     </div>
   );
 }

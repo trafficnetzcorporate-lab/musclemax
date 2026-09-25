@@ -15,6 +15,13 @@
       "when": 1789857389455,
       "tag": "0001_account_deletion_and_challenge_lifecycle",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790324890089,
+      "tag": "0002_challenge_access_and_attempt_start",
+      "breakpoints": true
     }
   ]
 }

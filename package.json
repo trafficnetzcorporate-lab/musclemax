@@ -12,8 +12,11 @@
     "ios:sync:bundled": "npm run build && MUSCLEMAX_LIVE_RELOAD=0 cap sync ios",
     "ios:sync:lovable": "MUSCLEMAX_LIVE_RELOAD=1 cap sync ios",
     "ios:open": "cap open ios",
+    "ios:device": "node scripts/ios-device.mjs",
     "test:layout": "node tests/mobile-layout/check.cjs",
     "test:emom": "node tests/emom-rate/check.cjs",
+    "test:emom-timer": "node tests/emom-timer/check.cjs",
+    "test:challenges": "node tests/challenges/check.cjs",
     "test:auth": "node tests/auth/apple-sign-in.cjs",
     "test:account-deletion": "node tests/account-deletion/check.cjs"
   },
