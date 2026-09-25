@@ -79,6 +79,10 @@ const bridgeMock = `
       await page.goto(base + '/__timer-check?mode=' + mode, { waitUntil: 'networkidle' });
       const header = page.getByText(/^Set \d+ of 10$/);
       const gridSet = number => page.getByRole('button', { name: new RegExp(`^Set ${number} `) });
+      const expectSelected = async number => {
+        assert.match(await gridSet(number).getAttribute('class'), /ring-2/, `Set ${number} must be selected in the grid`);
+        assert.equal(await page.locator('button.ring-2').count(), 1, 'Exactly one set must be selected');
+      };
       const advanceTo = async (wallSeconds, clockText, currentSet) => {
         await page.evaluate(seconds => { window.__timerTest.now = 1800000000000 + seconds * 1000; }, wallSeconds);
         await page.getByText(clockText, { exact: true }).waitFor();
@@ -94,47 +98,66 @@ const bridgeMock = `
       await page.getByRole('button', { name: 'Pause', exact: true }).waitFor();
       await advanceTo(1, '9:59', 1);
       await page.getByRole('button', { name: '12', exact: true }).click();
-      await advanceTo(125, '7:55');
-      await gridSet(3).click();
+      await advanceTo(60, '9:00', 2);
+      await expectSelected(2);
+      // Only tap rep counts: the timer must select each new grid cell itself.
+      await page.getByRole('button', { name: '8', exact: true }).click();
+      assert.match(await gridSet(2).innerText(), /Set 2\s+8\s+/i);
+      await advanceTo(125, '7:55', 3);
+      await expectSelected(3);
       await page.getByRole('button', { name: '9', exact: true }).click();
       await editSet(1, 7);
       assert.equal(await header.textContent(), 'Set 3 of 10', 'Editing a past set must not relabel the running minute');
       await page.getByText(/Editing Set 1/).waitFor();
+      await advanceTo(130, '7:50', 3);
+      await expectSelected(1);
       assert.match(await gridSet(3).innerText(), /Set 3\s+9\s+/i, 'Editing past reps must preserve live-set reps');
       assert.deepEqual(await page.evaluate(() => window.__timerTest.wake), [true], 'Rep editing must not release the native wake lock');
 
-      // A minute boundary must advance the timer while the editor stays on Set 1.
+      // The next minute must return from a manual correction to live rep entry.
+      const cueCountBeforeNextMinute = await page.evaluate(() => window.__timerTest.cues.length);
       await advanceTo(180, '7:00', 4);
-      await page.getByText(/Editing Set 1/).waitFor();
+      await expectSelected(4);
+      assert.equal(await page.getByText(/Editing Set/).count(), 0);
       await page.getByRole('button', { name: '8', exact: true }).click();
-      assert.match(await gridSet(1).innerText(), /Set 1\s+8\s+/i);
-      await page.waitForFunction(() => window.__timerTest.cues.length >= 2);
-      assert.deepEqual(await page.evaluate(() => window.__timerTest.cues), ['hard', 'hard'], 'Native minute cues must continue during rep editing');
+      assert.match(await gridSet(4).innerText(), /Set 4\s+8\s+/i);
+      assert.match(await gridSet(1).innerText(), /Set 1\s+7\s+/i, 'Automatic selection must not change earlier reps');
+      await page.waitForFunction(before => window.__timerTest.cues.length > before, cueCountBeforeNextMinute);
+      assert.equal(await page.evaluate(() => window.__timerTest.cues.at(-1)), 'hard', 'The next native minute cue must still play');
 
       // Pausing and editing another set must leave both clock and header intact.
       await page.getByRole('button', { name: 'Pause', exact: true }).click();
       await page.getByRole('button', { name: 'Resume', exact: true }).waitFor();
       await editSet(2, 6);
       await advanceTo(210, '7:00', 4);
+      await page.getByText(/^Set 2:/).waitFor();
       await page.getByRole('button', { name: 'Resume', exact: true }).click();
       await page.getByRole('button', { name: 'Pause', exact: true }).waitFor();
       await advanceTo(220, '6:50', 4);
+      await expectSelected(2);
       assert.deepEqual(await page.evaluate(() => window.__timerTest.wake), [true, false, true]);
 
-      // Returning to the live set restores the existing automatic editor follow.
-      await gridSet(4).click();
+      // Resuming preserves the correction until the next actual minute.
       await advanceTo(275, '5:55', 5);
+      await expectSelected(5);
       assert.equal(await page.getByText(/Editing Set/).count(), 0);
       await page.getByRole('button', { name: '11', exact: true }).click();
       assert.match(await gridSet(5).innerText(), /Set 5\s+11\s+/i);
 
+      // Catch up directly to the current set after a gap; stop at Set 10.
+      await advanceTo(571, '0:59', 10);
+      await expectSelected(10);
+      await page.getByRole('button', { name: '14', exact: true }).click();
+      assert.match(await gridSet(10).innerText(), /Set 10\s+14\s+/i);
       await advanceTo(631, '0:00', 10);
       await editSet(1, 10);
+      await advanceTo(640, '0:00', 10);
+      await expectSelected(1);
       assert.equal(await header.textContent(), 'Set 10 of 10', 'Post-workout corrections must preserve the finished timer');
       await page.getByRole('button', { name: mode === 'challenge' ? 'Submit Challenge' : 'Complete Workout', exact: true }).click();
       const session = await page.evaluate(() => window.__timerTest.session);
-      assert.deepEqual(session.sets.map(set => set.actualReps), [10, 6, 9, null, 11, null, null, null, null, null]);
-      assert.equal(session.totalReps, 36);
+      assert.deepEqual(session.sets.map(set => set.actualReps), [10, 6, 9, 8, 11, null, null, null, null, 14]);
+      assert.equal(session.totalReps, 58);
       assert.equal(session.phase, mode === 'challenge' ? 'completed' : mode);
       assert.equal((await page.evaluate(() => window.__timerTest.wake)).at(-1), false);
       assert.deepEqual(errors, [], 'Unexpected browser errors');

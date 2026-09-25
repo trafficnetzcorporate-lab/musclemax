@@ -130,12 +130,12 @@ export default function EmomTimer({ exerciseId, phase, prescription, onComplete,
       setTimeLeft(Math.ceil(remaining));
       const newActive = Math.min(Math.floor(elapsed / SET_INTERVAL_SEC), 9);
       setActiveSet(newActive);
-      // Auto-follow the active set only if the user hasn't manually picked
-      // a different one to edit. Compare against the last active value we saw.
-      // Capture it before React runs the queued updater and the ref advances.
-      const previousActive = lastActiveRef.current;
-      setSelectedSet(prev => (prev === previousActive ? newActive : prev));
-      lastActiveRef.current = newActive;
+      // Follow each new timed set automatically. Manual corrections remain
+      // selected within this minute, then the next minute returns to live reps.
+      if (newActive !== lastActiveRef.current) {
+        setSelectedSet(newActive);
+        lastActiveRef.current = newActive;
+      }
 
       if (remaining <= 0) {
         setIsRunning(false);
@@ -323,7 +323,9 @@ export default function EmomTimer({ exerciseId, phase, prescription, onComplete,
           <CardContent className="p-4">
             {isRunning && selectedSet !== activeSet && (
               <p className="text-[11px] text-primary text-center mb-1">
-                ✎ Editing Set {selectedSet + 1} — tap the live set in the grid to return
+                ✎ Editing Set {selectedSet + 1} — {activeSet < sets.length - 1
+                  ? 'returns to the live set next minute'
+                  : 'tap the live set in the grid to return'}
               </p>
             )}
             <p className="text-sm text-muted-foreground mb-2 text-center">
