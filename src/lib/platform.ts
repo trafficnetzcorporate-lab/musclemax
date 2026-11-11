@@ -22,6 +22,13 @@ export const PUBLIC_APP_URL: string =
   (import.meta.env.VITE_PUBLIC_APP_URL as string | undefined)?.replace(/\/$/, '') ||
   'https://musclemax.lovable.app';
 
+/**
+ * Link-preview service origin for shared Friend Challenge links. Recipients
+ * see a rich card (name, score, score card) and are forwarded to this app's
+ * /challenge/:id page. The app's own routes are unchanged.
+ */
+export const SHARE_LINK_ORIGIN = 'https://muscle-max-challenge-cards.lovable.app';
+
 /** True when running inside the native iOS shell (Capacitor WKWebView). */
 export function isNative(): boolean {
   return Capacitor.isNativePlatform();
@@ -31,9 +38,13 @@ export function isNative(): boolean {
 export const NATIVE_AUTH_SCHEME = 'com.jms.musclemax';
 export const NATIVE_AUTH_REDIRECT = `${NATIVE_AUTH_SCHEME}://auth-callback`;
 
-/** Absolute public challenge URL. Identical shape for web share + Universal Links. */
+/**
+ * Shareable challenge URL. Points at the link-preview service (`/c/:id`), which
+ * renders the rich card and forwards to this app's `/challenge/:id` page. The
+ * in-app route and old `{PUBLIC_APP_URL}/challenge/:id` links are untouched.
+ */
 export function publicChallengeUrl(challengeId: string): string {
-  return `${PUBLIC_APP_URL}/challenge/${challengeId}`;
+  return `${SHARE_LINK_ORIGIN}/c/${challengeId}`;
 }
 
 /**

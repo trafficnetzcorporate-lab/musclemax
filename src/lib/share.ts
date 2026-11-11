@@ -26,14 +26,14 @@ export function canNativeShare(): boolean {
 export async function shareChallenge(payload: SharePayload): Promise<'shared' | 'copied' | 'failed'> {
   if (isNative()) {
     try {
-      await Share.share({ title: payload.title, text: payload.text, url: payload.url, dialogTitle: payload.title });
+      await Share.share({ url: payload.url, dialogTitle: payload.title });
       return 'shared';
     } catch {
       /* user dismissed — fall through to copy */
     }
   } else if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
     try {
-      await navigator.share(payload);
+      await navigator.share({ url: payload.url });
       return 'shared';
     } catch {
       /* user dismissed or unsupported — fall through to copy */
