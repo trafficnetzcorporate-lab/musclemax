@@ -16,6 +16,8 @@ const output = path.join(root, 'tests/mobile-layout/node_modules/.cache/challeng
 const entry = 'virtual:challenge-check';
 const base = 'http://127.0.0.1:4182';
 const publicOrigin = 'https://musclemax-fixture.example.test';
+// Shared links go through the rich-preview service, which forwards to the app's /challenge/:id page.
+const shareLinkOrigin = 'https://muscle-max-challenge-cards.lovable.app';
 const genericMessage = 'Could not create the challenge. Your workout is saved on this device. Please try again.';
 const networkMessage = 'Could not reach Muscle Max. Your workout is saved on this device. Check your connection and try again.';
 const authMessage = 'Please sign in again to share your workout. Your workout is saved on this device.';
@@ -118,7 +120,7 @@ const syncMessage = 'Your workout has not finished syncing yet. Please try again
       const finishSuccess = async () => {
         await page.evaluate(id => { window.__challengeTest.rpc.resolve({ data: id, error: null }); }, challengeId);
         await dialog.waitFor();
-        await dialog.getByText(`${publicOrigin}/challenge/${challengeId}`, { exact: true }).waitFor();
+        await dialog.getByText(`${shareLinkOrigin}/c/${challengeId}`, { exact: true }).waitFor();
         await dialog.getByText('CANONICAL TEST ATHLETE JUST HIT A NEW MAX', { exact: true }).waitFor();
         await dialog.getByText('83', { exact: true }).waitFor();
         assert.deepEqual((await calls()).at(-1), ['rpc', 'get_public_challenge', { p_challenge_id: challengeId }]);
