@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.4"
   }
   public: {
     Tables: {
@@ -307,6 +307,14 @@ export type Database = {
           parent_challenge_id: string
           prescription: number[]
         }[]
+      }
+      is_challenge_creator: {
+        Args: { p_challenge_id: string }
+        Returns: boolean
+      }
+      is_challenge_participant: {
+        Args: { p_challenge_id: string }
+        Returns: boolean
       }
       start_challenge_attempt: {
         Args: { p_challenge_id: string }
