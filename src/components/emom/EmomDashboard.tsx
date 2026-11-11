@@ -456,7 +456,7 @@ export default function EmomDashboard() {
           <div className="mb-5 space-y-4">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-                <h1 className="min-w-0 break-words text-2xl font-bold leading-tight text-foreground tracking-tight">Golden Ratio</h1>
+                <h1 className="min-w-0 break-words text-2xl font-bold leading-tight text-foreground tracking-tight">Muscle Max</h1>
                 {syncing && <span role="status" className="text-xs text-muted-foreground">Syncing…</span>}
               </div>
               <p className="text-xs leading-relaxed text-muted-foreground mt-1">EMOM · Progressive Overload Engine</p>
