@@ -1,8 +1,13 @@
 /**
  * Modular sharing. The surface here is intentionally thin so the native iOS
  * share sheet replaces the implementation without touching the challenge data
- * model. All URLs come from PUBLIC_APP_URL — never the native scheme — so
- * shared challenge links always open for any recipient.
+ * model. Shared URLs come from SHARE_LINK_ORIGIN (the rich-preview service),
+ * which forwards to the real /challenge/:id page on PUBLIC_APP_URL — never the
+ * native scheme — so shared challenge links always open for any recipient.
+ *
+ * Only the URL is ever shared (no title/text): the preview service's rich card
+ * carries the message, and pairing text with a URL breaks AirDrop (delivers as
+ * a photo) and Messages (sends two separate bubbles).
  */
 
 import { Share } from '@capacitor/share';

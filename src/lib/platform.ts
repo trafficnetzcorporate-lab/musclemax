@@ -3,14 +3,20 @@ import { Capacitor } from '@capacitor/core';
 /**
  * Platform + public-URL configuration.
  *
- * PUBLIC_APP_URL is the single source of truth for every link that leaves the
- * app (Friend Challenge links, email-confirmation redirects, OAuth returns).
- * It is ALWAYS a public HTTPS origin — never the Capacitor scheme and never a
- * preview URL — so shared links work for any recipient and are shaped exactly
- * like the future Universal Links (`{PUBLIC_APP_URL}/challenge/:id`).
+ * PUBLIC_APP_URL is the app's own public HTTPS origin — the canonical home of
+ * the /challenge/:id pages and the target for email-confirmation redirects and
+ * OAuth returns. It is NEVER the Capacitor scheme and never a preview URL, and
+ * it is shaped exactly like the future Universal Links
+ * (`{PUBLIC_APP_URL}/challenge/:id`).
  *
  * Override with VITE_PUBLIC_APP_URL at build time when the permanent custom
  * domain is ready; until then it falls back to the published Lovable URL.
+ *
+ * SHARE_LINK_ORIGIN is the link-preview service used only for SHARED Friend
+ * Challenge links. It renders the rich preview (challenger name, score, score
+ * card) in iMessage/WhatsApp/X and then forwards to this app's real
+ * `{PUBLIC_APP_URL}/challenge/:id` page. Old /challenge/:id links keep working
+ * forever — the share origin is purely a presentation layer in front of them.
  */
 export const PUBLIC_APP_URL: string =
   (import.meta.env.VITE_PUBLIC_APP_URL as string | undefined)?.replace(/\/$/, '') ||
