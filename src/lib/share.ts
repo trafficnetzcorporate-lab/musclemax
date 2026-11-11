@@ -1,8 +1,13 @@
 /**
  * Modular sharing. The surface here is intentionally thin so the native iOS
  * share sheet replaces the implementation without touching the challenge data
- * model. All URLs come from PUBLIC_APP_URL — never the native scheme — so
- * shared challenge links always open for any recipient.
+ * model. Shared URLs come from SHARE_LINK_ORIGIN (the rich-preview service),
+ * which forwards to the real /challenge/:id page on PUBLIC_APP_URL — never the
+ * native scheme — so shared challenge links always open for any recipient.
+ *
+ * Only the URL is ever shared (no title/text): the preview service's rich card
+ * carries the message, and pairing text with a URL breaks AirDrop (delivers as
+ * a photo) and Messages (sends two separate bubbles).
  */
 
 import { Share } from '@capacitor/share';
@@ -21,14 +26,14 @@ export function canNativeShare(): boolean {
 export async function shareChallenge(payload: SharePayload): Promise<'shared' | 'copied' | 'failed'> {
   if (isNative()) {
     try {
-      await Share.share({ title: payload.title, text: payload.text, url: payload.url, dialogTitle: payload.title });
+      await Share.share({ url: payload.url, dialogTitle: payload.title });
       return 'shared';
     } catch {
       /* user dismissed — fall through to copy */
     }
   } else if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
     try {
-      await navigator.share(payload);
+      await navigator.share({ url: payload.url });
       return 'shared';
     } catch {
       /* user dismissed or unsupported — fall through to copy */
