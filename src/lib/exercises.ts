@@ -71,6 +71,16 @@ export const PUSH_EXERCISES: ExerciseInfo[] = [
     icon: '🏹',
   },
   {
+    id: 'one_arm_pushup',
+    name: 'One-Arm Push-Up',
+    category: 'push',
+    tier: 4,
+    description: 'One hand on the floor, feet wide, the other arm behind your back. Reps count per arm.',
+    prerequisiteId: 'archer_pushup',
+    requiredRepsToUnlock: 120,
+    icon: '☝️',
+  },
+  {
     id: 'pseudo_planche_pushup',
     name: 'Pseudo Planche Push-Up',
     category: 'push',
