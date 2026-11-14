@@ -8,6 +8,7 @@ export type PushVariation =
   | 'dips'
   | 'pike_pushup'
   | 'archer_pushup'
+  | 'one_arm_pushup'
   | 'pseudo_planche_pushup'
   | 'wall_handstand_pushup'
   | 'stomach_wall_handstand_pushup'
